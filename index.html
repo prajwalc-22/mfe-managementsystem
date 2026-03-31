@@ -1,0 +1,2862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mission For Excellence Tutorials - Management System</title>
+<meta name="description" content="Billing & Student Management System for Mission For Excellence Tutorials">
+<!-- FAVICON: MFE emblem as SVG data URI -->
+<link rel="icon" type="image/png" href="images/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Lato:wght@300;400;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════════════
+   ROOT & RESET
+═══════════════════════════════════════════════════ */
+:root {
+  --navy:#1e2d4d; --navy-dark:#131e35; --navy-mid:#253658;
+  --gold:#c9a84c; --gold-light:#e0be78; --gold-pale:#f5e9c8;
+  --cream:#faf8f3; --white:#ffffff;
+  --text:#2d3748; --muted:#718096; --light:#f7f8fa;
+  --success:#16a34a; --danger:#dc2626; --warning:#d97706; --info:#2563eb;
+  --success-bg:#dcfce7; --danger-bg:#fee2e2; --warning-bg:#fef3c7; --info-bg:#dbeafe;
+  --border:#e2e8f0; --shadow:0 2px 8px rgba(0,0,0,0.08);
+  --radius:10px; --radius-sm:6px; --radius-lg:14px;
+  --sidebar-w:230px; --topbar-h:60px;
+  --transition:all 0.2s ease;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;font-size:16px;}
+body{font-family:'Lato',sans-serif;background:var(--light);color:var(--text);min-height:100vh;overflow-x:hidden;}
+a{text-decoration:none;color:inherit;}
+button{font-family:'Lato',sans-serif;cursor:pointer;}
+input,select,textarea{font-family:'Lato',sans-serif;}
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:var(--light);}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+
+/* ═══════════════════════════════════════════════════
+   LOGIN PAGE
+═══════════════════════════════════════════════════ */
+#login-screen {
+  min-height:100vh;
+  background:linear-gradient(160deg,var(--navy-dark) 0%,var(--navy) 55%,#1a3060 100%);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  position:fixed;inset:0;z-index:9999;
+}
+#login-screen.hidden{display:none;}
+.login-box{
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(201,168,76,0.3);
+  border-radius:var(--radius-lg);
+  padding:48px 40px;
+  width:100%;max-width:420px;
+  backdrop-filter:blur(12px);
+  animation:fadeUp 0.6s ease both;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px);}to{opacity:1;transform:translateY(0);}}
+.login-logo{text-align:center;margin-bottom:32px;}
+.login-logo-circle{
+  width:72px;height:72px;border-radius:50%;
+  background:var(--white);border:3px solid var(--gold);
+  display:inline-flex;align-items:center;justify-content:center;
+  box-shadow:0 0 20px rgba(201,168,76,0.35);margin-bottom:14px;
+  overflow:hidden;
+}
+.login-title{font-family:'Cinzel',serif;color:var(--white);font-size:17px;letter-spacing:0.08em;}
+.login-sub{color:rgba(255,255,255,0.45);font-size:11px;letter-spacing:0.18em;margin-top:4px;}
+.login-divider{height:1px;background:linear-gradient(90deg,transparent,rgba(201,168,76,0.4),transparent);margin:24px 0;}
+.login-group{margin-bottom:16px;}
+.login-group label{display:block;font-size:11px;font-weight:700;letter-spacing:0.1em;color:rgba(255,255,255,0.55);margin-bottom:6px;text-transform:uppercase;}
+.login-group input{
+  width:100%;padding:12px 14px;
+  background:rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.15);
+  border-radius:var(--radius-sm);color:var(--white);font-size:14px;
+  transition:var(--transition);
+}
+.login-group input:focus{outline:none;border-color:var(--gold);background:rgba(255,255,255,0.1);}
+.login-group input::placeholder{color:rgba(255,255,255,0.3);}
+.login-btn{
+  width:100%;padding:13px;margin-top:8px;
+  background:linear-gradient(135deg,var(--gold),var(--gold-light));
+  color:var(--navy-dark);border:none;border-radius:var(--radius-sm);
+  font-family:'Cinzel',serif;font-size:12px;font-weight:700;letter-spacing:0.12em;
+  transition:var(--transition);
+}
+.login-btn:hover{opacity:0.9;transform:translateY(-1px);box-shadow:0 6px 20px rgba(201,168,76,0.4);}
+.login-error{color:#fca5a5;font-size:12px;text-align:center;margin-top:10px;display:none;}
+.login-footer{text-align:center;margin-top:20px;font-size:11px;color:rgba(255,255,255,0.3);}
+
+/* ═══════════════════════════════════════════════════
+   APP SHELL
+═══════════════════════════════════════════════════ */
+#app{display:none;}
+#app.visible{display:flex;flex-direction:column;min-height:100vh;}
+
+/* ═══════════════════════════════════════════════════
+   TOPBAR
+═══════════════════════════════════════════════════ */
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:500;
+  height:var(--topbar-h);
+  background:var(--navy-dark);
+  border-bottom:2px solid var(--gold);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px 0 0;
+}
+.topbar-left{display:flex;align-items:center;gap:0;}
+.sidebar-toggle{
+  width:var(--topbar-h);height:var(--topbar-h);
+  background:none;border:none;border-right:1px solid rgba(255,255,255,0.07);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  cursor:pointer;flex-shrink:0;
+}
+.sidebar-toggle span{display:block;width:20px;height:2px;background:rgba(255,255,255,0.6);border-radius:2px;transition:var(--transition);}
+.sidebar-toggle:hover span{background:var(--gold);}
+.topbar-brand{display:flex;align-items:center;gap:10px;padding:0 16px;}
+/* Brand circle now uses SVG logo */
+.brand-circle{
+  width:36px;height:36px;border-radius:50%;background:var(--white);
+  border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;overflow:hidden;
+}
+.brand-text{font-family:'Cinzel',serif;color:var(--white);font-size:12px;letter-spacing:0.06em;line-height:1.3;}
+.brand-text span{color:var(--gold);font-size:9px;display:block;letter-spacing:0.18em;}
+.topbar-right{display:flex;align-items:center;gap:12px;}
+.topbar-date{font-size:12px;color:rgba(255,255,255,0.4);white-space:nowrap;}
+.topbar-admin{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);
+  border-radius:20px;padding:5px 12px 5px 6px;
+}
+.admin-avatar{
+  width:26px;height:26px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),var(--gold-light));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Cinzel',serif;font-size:10px;color:var(--navy-dark);font-weight:700;
+}
+.admin-name{font-size:11px;color:var(--white);font-weight:700;}
+.logout-btn{
+  background:none;border:1px solid rgba(255,255,255,0.15);color:rgba(255,255,255,0.6);
+  font-size:11px;cursor:pointer;padding:6px 12px;border-radius:6px;transition:var(--transition);
+  display:flex;align-items:center;gap:5px;
+}
+.logout-btn:hover{color:#fff;border-color:rgba(220,38,38,0.5);background:rgba(220,38,38,0.12);}
+
+/* ═══════════════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════════════ */
+.sidebar{
+  position:fixed;left:0;top:var(--topbar-h);bottom:0;z-index:400;
+  width:var(--sidebar-w);
+  background:var(--navy);
+  overflow-y:auto;overflow-x:hidden;
+  transition:transform 0.3s ease,width 0.3s ease;
+  border-right:1px solid rgba(255,255,255,0.05);
+}
+.sidebar.collapsed{width:60px;}
+.sidebar-overlay{display:none;position:fixed;inset:0;z-index:399;background:rgba(0,0,0,0.4);}
+.sidebar-section{
+  padding:16px 16px 4px;
+  font-size:9px;color:rgba(255,255,255,0.25);
+  letter-spacing:0.25em;text-transform:uppercase;white-space:nowrap;overflow:hidden;
+}
+.sidebar.collapsed .sidebar-section{opacity:0;}
+.nav-item{
+  display:flex;align-items:center;gap:12px;
+  padding:11px 20px;cursor:pointer;
+  color:rgba(255,255,255,0.6);font-size:13px;
+  border-left:3px solid transparent;
+  transition:var(--transition);white-space:nowrap;overflow:hidden;
+  position:relative;
+}
+.nav-item:hover{background:rgba(255,255,255,0.05);color:var(--white);}
+.nav-item.active{background:rgba(201,168,76,0.12);color:var(--gold);border-left-color:var(--gold);}
+.nav-icon{font-size:16px;width:20px;text-align:center;flex-shrink:0;}
+.nav-label{overflow:hidden;transition:opacity 0.2s;}
+.sidebar.collapsed .nav-label{opacity:0;width:0;}
+.nav-badge{
+  margin-left:auto;background:var(--danger);color:#fff;
+  font-size:9px;font-weight:700;padding:2px 6px;border-radius:10px;
+  display:none;
+}
+.nav-badge.visible{display:inline-block;}
+.sidebar.collapsed .nav-badge{display:none !important;}
+
+/* ═══════════════════════════════════════════════════
+   MAIN CONTENT
+═══════════════════════════════════════════════════ */
+.main-content{
+  margin-left:var(--sidebar-w);
+  margin-top:var(--topbar-h);
+  padding:28px;
+  min-height:calc(100vh - var(--topbar-h));
+  transition:margin-left 0.3s ease;
+}
+.main-content.expanded{margin-left:60px;}
+
+/* ═══════════════════════════════════════════════════
+   PAGE SYSTEM
+═══════════════════════════════════════════════════ */
+.page{display:none;animation:fadeUp 0.4s ease both;}
+.page.active{display:block;}
+
+/* ═══════════════════════════════════════════════════
+   PAGE HEADER
+═══════════════════════════════════════════════════ */
+.page-header{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:24px;flex-wrap:wrap;gap:12px;
+}
+/*.ph-left{}*/
+.page-title{font-family:'Cinzel',serif;font-size:20px;color:var(--navy-dark);}
+.page-subtitle{font-size:13px;color:var(--muted);margin-top:2px;}
+.ph-right{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* ═══════════════════════════════════════════════════
+   METRIC CARDS
+═══════════════════════════════════════════════════ */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+.metric-card{
+  background:var(--white);border-radius:var(--radius);
+  padding:20px;border:1px solid var(--border);
+  position:relative;overflow:hidden;transition:var(--transition);
+}
+.metric-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.08);}
+.metric-card::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:3px;
+}
+.mc-green::after{background:linear-gradient(90deg,var(--success),#4ade80);}
+.mc-gold::after{background:linear-gradient(90deg,var(--gold),var(--gold-light));}
+.mc-red::after{background:linear-gradient(90deg,var(--danger),#f87171);}
+.mc-blue::after{background:linear-gradient(90deg,var(--info),#60a5fa);}
+.metric-icon{font-size:28px;margin-bottom:10px;}
+.metric-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px;}
+.metric-value{font-size:26px;font-weight:700;color:var(--navy-dark);line-height:1;}
+.metric-sub{font-size:11px;color:var(--muted);margin-top:6px;}
+.metric-trend{font-size:11px;font-weight:700;margin-top:4px;}
+
+/* ═══════════════════════════════════════════════════
+   CARDS
+═══════════════════════════════════════════════════ */
+.card{background:var(--white);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-bottom:20px;}
+.card-header{
+  padding:14px 20px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.card-title{font-family:'Cinzel',serif;font-size:13px;color:var(--navy-dark);white-space:nowrap;}
+.card-body{padding:31px;}
+.card-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+
+/* ═══════════════════════════════════════════════════
+   BUTTONS
+═══════════════════════════════════════════════════ */
+.btn{
+  padding:9px 18px;border:none;border-radius:var(--radius-sm);
+  font-size:12px;font-weight:700;cursor:pointer;
+  display:inline-flex;align-items:center;gap:6px;
+  letter-spacing:0.04em;transition:var(--transition);white-space:nowrap;
+}
+.btn-primary{background:linear-gradient(135deg,var(--gold),var(--gold-light));color:var(--navy-dark);}
+.btn-primary:hover{opacity:0.9;transform:translateY(-1px);box-shadow:0 4px 14px rgba(201,168,76,0.4);}
+.btn-navy{background:var(--navy-dark);color:var(--white);}
+.btn-navy:hover{background:var(--navy-mid);}
+.btn-danger{background:var(--danger);color:#fff;}
+.btn-danger:hover{opacity:0.85;}
+.btn-success{background:var(--success);color:#fff;}
+.btn-success:hover{opacity:0.85;}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text);}
+.btn-outline:hover{background:var(--light);border-color:#aaa;}
+.btn-ghost{background:transparent;border:none;color:var(--muted);padding:6px 8px;}
+.btn-ghost:hover{color:var(--text);background:var(--light);}
+.btn-sm{padding:6px 12px;font-size:11px;}
+.btn-lg{padding:13px 28px;font-size:13px;}
+.btn-icon{padding:7px;border-radius:var(--radius-sm);}
+.btn-whatsapp{background:#25d366;color:#fff;}
+.btn-whatsapp:hover{opacity:0.85;}
+
+/* ═══════════════════════════════════════════════════
+   TABLE
+═══════════════════════════════════════════════════ */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead{position:sticky;top:0;z-index:1;}
+th{
+  background:#f8fafc;color:var(--muted);font-size:10px;
+  letter-spacing:0.1em;text-transform:uppercase;
+  padding:11px 14px;text-align:left;border-bottom:2px solid var(--border);
+  font-weight:700;white-space:nowrap;
+}
+td{padding:12px 14px;border-bottom:1px solid #f1f5f9;vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tbody tr{transition:background 0.15s;}
+tbody tr:hover td{background:#fafbfc;}
+
+/* ═══════════════════════════════════════════════════
+   BADGES
+═══════════════════════════════════════════════════ */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-paid{background:var(--success-bg);color:var(--success);}
+.badge-unpaid{background:var(--danger-bg);color:var(--danger);}
+.badge-partial{background:var(--warning-bg);color:var(--warning);}
+.badge-navy{background:rgba(30,45,77,0.1);color:var(--navy-dark);}
+.badge-info{background:var(--info-bg);color:var(--info);}
+.badge-pink{background:#fce7f3;color:#be185d;}
+
+/* ═══════════════════════════════════════════════════
+   AVATAR
+═══════════════════════════════════════════════════ */
+.avatar{
+  width:36px;height:36px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--navy),var(--navy-mid));
+  color:var(--gold);display:inline-flex;align-items:center;justify-content:center;
+  font-family:'Cinzel',serif;font-size:13px;font-weight:700;
+}
+
+/* ═══════════════════════════════════════════════════
+   FORM
+═══════════════════════════════════════════════════ */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-group{display:flex;flex-direction:column;gap:5px;}
+.form-group.full{grid-column:1/-1;}
+.form-group.third{grid-column:span 1;}
+.form-label{font-size:11px;font-weight:700;color:var(--navy-dark);letter-spacing:0.06em;text-transform:uppercase;}
+.form-input{
+  padding:10px 12px;border:1.5px solid var(--border);
+  border-radius:var(--radius-sm);font-size:13px;color:var(--text);
+  background:var(--white);transition:var(--transition);
+}
+.form-input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,0.12);}
+.form-input::placeholder{color:#b0bac9;}
+select.form-input{appearance:none;-webkit-appearance:none;cursor:pointer;}
+select.form-input option{color:var(--text);}
+.form-hint{font-size:11px;color:var(--muted);margin-top:2px;}
+.form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);}
+.form-section-title{font-family:'Cinzel',serif;font-size:12px;color:var(--navy-dark);grid-column:1/-1;margin-top:8px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+
+/* ═══════════════════════════════════════════════════
+   FILTER SELECTS — styled custom arrow
+═══════════════════════════════════════════════════ */
+.filter-search,
+.filter-select,
+.billing-search,
+select.filter-select{
+  min-width:0;
+  appearance:none;
+  -webkit-appearance:none;
+}
+.filter-select,
+select.filter-select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23718096' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 10px center;
+  padding-right:28px;
+  cursor:pointer;
+}
+
+/* ═══════════════════════════════════════════════════
+   MODAL
+═══════════════════════════════════════════════════ */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.5);
+  z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;
+  animation:fadeIn 0.2s ease;
+}
+.modal-overlay.hidden{display:none;}
+@keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+.modal{
+  background:var(--white);border-radius:var(--radius-lg);
+  width:100%;max-width:620px;max-height:92vh;
+  overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.2);
+  animation:modalIn 0.25s ease;
+}
+.modal-wide{max-width:800px;}
+.modal-narrow{max-width:480px;}
+@keyframes modalIn{from{opacity:0;transform:translateY(16px) scale(0.98);}to{opacity:1;transform:none;}}
+.modal-header{
+  background:var(--navy-dark);padding:16px 20px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-radius:var(--radius-lg) var(--radius-lg) 0 0;position:sticky;top:0;z-index:2;
+}
+.modal-header h3{font-family:'Cinzel',serif;color:var(--white);font-size:14px;letter-spacing:0.06em;}
+.modal-header-gold{background:linear-gradient(135deg,var(--navy-dark),#1a3060);}
+.modal-close{background:none;border:none;color:rgba(255,255,255,0.5);font-size:22px;cursor:pointer;line-height:1;padding:2px 6px;border-radius:4px;transition:var(--transition);}
+.modal-close:hover{color:#fff;background:rgba(255,255,255,0.1);}
+.modal-body{padding:24px;}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;background:var(--light);border-radius:0 0 var(--radius-lg) var(--radius-lg);}
+
+/* ═══════════════════════════════════════════════════
+   CONFIRM DELETE MODAL (replaces browser confirm)
+═══════════════════════════════════════════════════ */
+.confirm-modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.6);
+  z-index:2100;display:flex;align-items:center;justify-content:center;padding:16px;
+  animation:fadeIn 0.2s ease;
+}
+.confirm-modal-overlay.hidden{display:none;}
+.confirm-modal{
+  background:var(--white);border-radius:var(--radius-lg);
+  width:100%;max-width:380px;
+  box-shadow:0 24px 64px rgba(0,0,0,0.3);
+  animation:modalIn 0.25s ease;overflow:hidden;
+}
+.confirm-modal-header{
+  padding:24px 24px 0;text-align:center;
+}
+.confirm-modal-icon-wrap{
+  width:64px;height:64px;border-radius:50%;
+  background:var(--danger-bg);
+  display:flex;align-items:center;justify-content:center;
+  margin:0 auto 14px;font-size:28px;
+}
+.confirm-modal-icon-wrap.warn{background:var(--warning-bg);}
+.confirm-modal-title{font-family:'Cinzel',serif;color:var(--navy-dark);font-size:17px;letter-spacing:0.04em;margin-bottom:8px;}
+.confirm-modal-body{padding:12px 24px 24px;}
+.confirm-modal-text{font-size:13px;color:var(--muted);text-align:center;line-height:1.7;margin-bottom:20px;}
+.confirm-modal-actions{display:flex;gap:10px;}
+.confirm-modal-actions .btn{flex:1;justify-content:center;padding:11px;}
+
+/* ═══════════════════════════════════════════════════
+   LOGOUT MODAL
+═══════════════════════════════════════════════════ */
+.logout-modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.6);
+  z-index:2000;display:flex;align-items:center;justify-content:center;padding:16px;
+  animation:fadeIn 0.2s ease;
+}
+.logout-modal-overlay.hidden{display:none;}
+.logout-modal{
+  background:var(--white);border-radius:var(--radius-lg);
+  width:100%;max-width:360px;
+  box-shadow:0 24px 64px rgba(0,0,0,0.3);
+  animation:modalIn 0.25s ease;overflow:hidden;
+}
+.logout-modal-header{
+  background:linear-gradient(135deg,var(--navy-dark),#1e2d4d);
+  padding:20px 24px;text-align:center;
+}
+.logout-modal-icon{font-size:36px;display:block;margin-bottom:8px;}
+.logout-modal-title{font-family:'Cinzel',serif;color:var(--white);font-size:16px;letter-spacing:0.06em;}
+.logout-modal-sub{color:rgba(255,255,255,0.5);font-size:12px;margin-top:4px;}
+.logout-modal-body{padding:24px;}
+.logout-modal-text{font-size:14px;color:var(--text);text-align:center;line-height:1.6;margin-bottom:20px;}
+.logout-modal-actions{display:flex;gap:10px;}
+.logout-modal-actions .btn{flex:1;justify-content:center;padding:11px;}
+
+/* ═══════════════════════════════════════════════════
+   SEARCH / FILTER BAR
+═══════════════════════════════════════════════════ */
+.filter-bar{display:flex;gap:8px;flex-wrap:nowrap;align-items:center;width:100%;}
+.filter-search{flex:2;min-width:0;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;transition:var(--transition);}
+.filter-search:focus{outline:none;border-color:var(--gold);}
+.filter-select{flex:1;min-width:0;padding:9px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--white);color:var(--text);cursor:pointer;appearance:none;-webkit-appearance:none;}
+.filter-select:focus{outline:none;border-color:var(--gold);}
+
+/* ═══════════════════════════════════════════════════
+   STUDENT PROFILE MODAL
+═══════════════════════════════════════════════════ */
+#detail-modal .modal{
+  overflow:hidden;
+  padding:0;
+  max-width:560px;
+}
+.profile-header{
+  background:linear-gradient(135deg,var(--navy-dark) 0%,var(--navy-mid) 100%);
+  padding:28px 28px 24px;
+  display:flex;align-items:center;gap:18px;
+  position:relative;
+}
+.profile-header::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(201,168,76,0.5),transparent);
+}
+.profile-avatar{
+  width:64px;height:64px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--gold),var(--gold-light));
+  color:var(--navy-dark);display:flex;align-items:center;justify-content:center;
+  font-family:'Cinzel',serif;font-size:24px;font-weight:700;
+  border:3px solid rgba(255,255,255,0.25);
+  box-shadow:0 4px 16px rgba(0,0,0,0.3);
+}
+.profile-name{font-family:'Cinzel',serif;font-size:20px;color:var(--white);letter-spacing:0.04em;}
+.profile-sub{font-size:12px;color:rgba(255,255,255,0.55);margin-top:5px;line-height:1.5;}
+.profile-close-btn{
+  position:absolute;top:14px;right:14px;
+  background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.15);
+  color:rgba(255,255,255,0.7);font-size:16px;cursor:pointer;
+  width:32px;height:32px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  transition:var(--transition);
+}
+.profile-close-btn:hover{background:rgba(255,255,255,0.2);color:#fff;}
+.profile-body{padding:20px 24px 24px;}
+.profile-section{
+  font-family:'Cinzel',serif;font-size:10px;
+  color:var(--gold);letter-spacing:0.2em;text-transform:uppercase;
+  margin:18px 0 10px;padding-bottom:6px;
+  border-bottom:1px solid var(--border);
+}
+.profile-section:first-child{margin-top:0;}
+.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.profile-field{background:var(--light);border-radius:var(--radius-sm);padding:12px 14px;border:1px solid var(--border);}
+.profile-field.full{grid-column:1/-1;}
+.profile-field-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px;font-weight:700;}
+.profile-field-val{font-size:13px;font-weight:700;color:var(--navy-dark);}
+.profile-actions{display:flex;gap:8px;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);flex-wrap:wrap;}
+.profile-actions .btn{flex:1;min-width:100px;justify-content:center;}
+
+/* ═══════════════════════════════════════════════════
+   RECEIPT
+═══════════════════════════════════════════════════ */
+.receipt{
+  background:var(--white);border:1px solid var(--border);
+  border-radius:var(--radius);max-width:420px;margin:0 auto;
+  font-family:'Lato',sans-serif;
+}
+.receipt-header{
+  background:var(--navy-dark);padding:24px;
+  border-radius:var(--radius) var(--radius) 0 0;text-align:center;
+}
+.receipt-logo-text{font-family:'Cinzel',serif;color:var(--white);font-size:16px;letter-spacing:0.08em;}
+.receipt-sub{color:var(--gold);font-size:9px;letter-spacing:0.2em;margin-top:3px;}
+.receipt-badge{
+  background:rgba(201,168,76,0.15);border:1px solid rgba(201,168,76,0.4);
+  color:var(--gold-light);font-family:'Cinzel',serif;font-size:10px;
+  letter-spacing:0.18em;padding:5px 16px;border-radius:20px;
+  display:inline-block;margin-top:12px;
+}
+.receipt-body{padding:20px;}
+.receipt-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed #eee;font-size:13px;}
+.receipt-row:last-child{border-bottom:none;}
+.receipt-label{color:var(--muted);}
+.receipt-val{font-weight:700;color:var(--navy-dark);}
+.receipt-total-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:12px 16px;background:var(--light);border-radius:var(--radius-sm);margin:12px 0;
+}
+.receipt-footer{
+  text-align:center;padding:16px;
+  border-top:1px dashed #eee;font-size:11px;color:var(--muted);
+}
+.receipt-stamp{
+  display:inline-block;
+  border:2px solid var(--success);color:var(--success);
+  font-family:'Cinzel',serif;font-size:11px;letter-spacing:0.12em;
+  padding:4px 16px;border-radius:3px;
+  transform:rotate(-8deg);margin-top:6px;
+}
+
+/* ═══════════════════════════════════════════════════
+   PROGRESS / BAR CHARTS
+═══════════════════════════════════════════════════ */
+.progress-bar{background:#f0f2f5;border-radius:6px;height:10px;overflow:hidden;margin-top:6px;}
+.progress-fill{height:100%;border-radius:6px;transition:width 0.8s ease;}
+
+/* ═══════════════════════════════════════════════════
+   EMPTY STATE
+═══════════════════════════════════════════════════ */
+.empty-state{text-align:center;padding:56px 20px;color:var(--muted);}
+.empty-icon{font-size:48px;margin-bottom:14px;}
+.empty-title{font-family:'Cinzel',serif;font-size:15px;color:var(--navy-dark);margin-bottom:6px;}
+.empty-text{font-size:13px;line-height:1.7;max-width:320px;margin:0 auto 16px;}
+
+/* ═══════════════════════════════════════════════════
+   TOAST
+═══════════════════════════════════════════════════ */
+.toast-container{position:fixed;top:76px;right:16px;z-index:2000;display:flex;flex-direction:column;gap:8px;}
+.toast{
+  background:var(--white);border-radius:var(--radius-sm);
+  padding:12px 16px;box-shadow:0 6px 24px rgba(0,0,0,0.15);
+  font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;
+  border-left:4px solid;min-width:260px;max-width:360px;
+  animation:toastIn 0.3s ease;
+}
+@keyframes toastIn{from{opacity:0;transform:translateX(24px);}to{opacity:1;transform:none;}}
+.toast.success{border-color:var(--success);color:var(--success);}
+.toast.error{border-color:var(--danger);color:var(--danger);}
+.toast.info{border-color:var(--info);color:var(--info);}
+.inline-alert{padding:10px 14px;border-radius:var(--radius-sm);font-size:12px;margin-bottom:14px;border:1px solid;}
+.inline-alert.error{background:var(--danger-bg);color:var(--danger);border-color:#fca5a5;}
+.inline-alert.success{background:var(--success-bg);color:var(--success);border-color:#86efac;}
+
+/* ═══════════════════════════════════════════════════
+   LOADING
+═══════════════════════════════════════════════════ */
+.loading{text-align:center;padding:40px;color:var(--muted);font-size:14px;}
+.spinner{
+  width:28px;height:28px;border:3px solid var(--border);
+  border-top-color:var(--gold);border-radius:50%;
+  animation:spin 0.8s linear infinite;margin:0 auto 12px;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ═══════════════════════════════════════════════════
+   MISC UTILITIES
+═══════════════════════════════════════════════════ */
+.gold-divider{height:2px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:16px 0;}
+.text-success{color:var(--success);} .text-danger{color:var(--danger);} .text-gold{color:var(--gold);} .text-muted{color:var(--muted);}
+.fw-bold{font-weight:700;} .fw-normal{font-weight:400;}
+.fs-11{font-size:11px;} .fs-12{font-size:12px;} .fs-13{font-size:13px;}
+.d-flex{display:flex;} .align-center{align-items:center;} .gap-6{gap:6px;} .gap-8{gap:8px;} .gap-12{gap:12px;}
+.mt-4{margin-top:4px;} .mt-8{margin-top:8px;} .mt-16{margin-top:16px;}
+.mb-16{margin-bottom:16px;}
+.text-center{text-align:center;}
+.w-full{width:100%;}
+
+/* ═══════════════════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════════════════ */
+.pay-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #f1f5f9;}
+.pay-row:last-child{border-bottom:none;}
+
+/* ── STUDENT STATS STRIP ── */
+.stu-stats{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px;}
+.stu-stat-card{
+  background:var(--white);border:1px solid var(--border);
+  border-radius:var(--radius);padding:14px 20px;
+  display:flex;align-items:center;gap:12px;
+  flex:1;min-width:120px;transition:var(--transition);
+}
+.stu-stat-card:hover{transform:translateY(-2px);box-shadow:var(--shadow);}
+.stu-stat-icon{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.stu-stat-icon.blue{background:var(--info-bg);}
+.stu-stat-icon.gold{background:rgba(201,168,76,0.12);}
+.stu-stat-icon.green{background:var(--success-bg);}
+.stu-stat-icon.purple{background:#f3e8ff;}
+.stu-stat-num{font-family:'Cinzel',serif;font-size:22px;font-weight:700;color:var(--navy-dark);line-height:1;}
+.stu-stat-label{font-size:11px;color:var(--muted);margin-top:3px;}
+
+/* ═══════════════════════════════════════════════════
+   BILLING METRICS
+═══════════════════════════════════════════════════ */
+#billing-metrics .metric-card{border-radius:var(--radius);}
+
+/* ═══════════════════════════════════════════════════
+   MOBILE CARDS
+═══════════════════════════════════════════════════ */
+.mob-card{
+  background:var(--white);border-radius:14px;
+  padding:16px;margin-bottom:12px;
+  box-shadow:0 2px 12px rgba(30,45,77,0.07);
+  border:1px solid var(--border);transition:box-shadow 0.2s;
+}
+.mob-card:last-child{margin-bottom:0;}
+.mob-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.mob-card-user{display:flex;align-items:center;gap:10px;}
+.mob-card-name{font-weight:700;font-size:14px;color:var(--navy-dark);}
+.mob-card-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.mob-card-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;}
+.mob-card-cell{background:var(--light);padding:9px 10px;border-radius:8px;}
+.mob-card-cell-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;}
+.mob-card-cell-val{font-size:13px;font-weight:700;color:var(--navy-dark);}
+.mob-card-actions{display:flex;gap:6px;}
+.mob-card-actions .btn{flex:1;justify-content:center;font-size:11px;padding:7px 6px;}
+.mob-cards-container{display:none;}
+
+/* ═══════════════════════════════════════════════════
+   SETTINGS LAYOUT
+═══════════════════════════════════════════════════ */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;}
+.settings-grid .card{margin-bottom:0;max-width:none !important;}
+.settings-info-item{display:flex;align-items:flex-start;gap:12px;padding:14px 0;border-bottom:1px solid var(--border);}
+.settings-info-item:last-child{border-bottom:none;}
+.settings-info-icon{width:36px;height:36px;border-radius:8px;flex-shrink:0;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.2);display:flex;align-items:center;justify-content:center;font-size:16px;}
+.settings-info-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;}
+.settings-info-val{font-size:13px;font-weight:700;color:var(--navy-dark);}
+
+/* ═══════════════════════════════════════════════════
+   PRINT RECEIPT
+═══════════════════════════════════════════════════ */
+@media print{
+  body > *{display:none !important;}
+  #receipt-modal{
+    display:block !important;
+    position:fixed !important;
+    inset:0 !important;
+    background:white !important;
+    z-index:99999 !important;
+    padding:0 !important;
+    margin:0 !important;
+  }
+  #receipt-modal .modal-header,
+  #receipt-modal .modal-footer{display:none !important;}
+  #receipt-modal .modal-overlay,
+  #receipt-modal.modal-overlay{
+    position:static !important;
+    background:white !important;
+    padding:0 !important;
+    display:block !important;
+  }
+  #receipt-modal .modal{
+    box-shadow:none !important;
+    border:none !important;
+    max-height:none !important;
+    width:100% !important;
+    max-width:100% !important;
+    border-radius:0 !important;
+  }
+  #receipt-modal .modal-body{padding:0 !important;}
+  .receipt{max-width:100% !important;border:none !important;border-radius:0 !important;box-shadow:none !important;page-break-inside:avoid;}
+  .receipt-header{border-radius:0 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;print-color-adjust:exact;}
+  @page{size:A5 portrait;margin:8mm;}
+}
+
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE — LARGE TABLET 901–1156px
+═══════════════════════════════════════════════════ */
+@media(max-width:1156px){
+  .sidebar{transform:translateX(-100%);width:var(--sidebar-w) !important;}
+  .sidebar.mobile-open{transform:translateX(0);}
+  .sidebar-overlay{display:none;}
+  .sidebar-overlay.active{display:block;}
+  .main-content{margin-left:0 !important;padding:20px;}
+  .metrics{grid-template-columns:1fr 1fr;gap:14px;}
+  .card-grid{grid-template-columns:1fr;}
+  .topbar-date{display:none;}
+  .page-header{align-items:center;}
+  #page-students .filter-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
+  #page-students .filter-search{grid-column:1/-1;}
+  .settings-grid{grid-template-columns:1fr 1fr;}
+  .stu-stats{grid-template-columns:1fr 1fr;}
+  #page-billing .billing-filter{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  #page-billing .billing-search{grid-column:1/-1;}
+  #page-billing table{min-width:unset;}
+  #page-billing th:nth-child(8),
+  #page-billing td:nth-child(8),
+  #page-billing th:nth-child(9),
+  #page-billing td:nth-child(9){display:none;}
+  #page-billing th,
+  #page-billing td{padding:10px 8px;font-size:12px;white-space:normal;word-break:break-word;}
+  #page-billing table{width:100%;table-layout:fixed;}
+  #page-billing td:nth-child(2){width:18%;}
+  #page-billing td:nth-child(5),
+  #page-billing td:nth-child(6),
+  #page-billing td:nth-child(7){width:12%;}
+  #page-billing td:last-child{text-align:center;}
+  #page-billing td:last-child .btn{font-size:10px;padding:6px 8px;}
+}
+
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE — TABLET ≤1261px
+═══════════════════════════════════════════════════ */
+@media(max-width:1261px){
+  .main-content{padding:14px;}
+  .metrics{grid-template-columns:1fr 1fr;gap:10px;}
+  .metric-card{padding:14px 12px;}
+  .metric-icon{font-size:22px;margin-bottom:6px;}
+  .metric-label{font-size:10px;}
+  .metric-value{font-size:20px;}
+  .page-header{flex-direction:column;align-items:stretch;gap:10px;}
+  .ph-right{display:flex;}
+  .ph-right .btn{flex:1;justify-content:center;}
+  #page-students .filter-bar{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  #page-students .filter-search{grid-column:1/-1;}
+  #page-billing .billing-filter{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;}
+  #page-billing .billing-search{grid-column:1/-1;}
+  #students-mob:not(:empty) ~ .tbl-wrap{display:none !important;}
+  #page-billing .mob-cards-container{display:block;}
+  #page-billing #billing-mob:not(:empty) ~ .tbl-wrap{display:none !important;}
+  .card-header{padding:12px 14px;}
+  .card-body{padding:14px;}
+  .settings-grid{grid-template-columns:1fr;}
+  .stu-stats{grid-template-columns:1fr 1fr;gap:8px;}
+  .modal{max-width:100%;border-radius:var(--radius-lg) var(--radius-lg) 0 0;}
+  .modal-overlay{align-items:flex-end;padding:0;}
+}
+#page-billing .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+#page-billing th,#page-billing td{white-space:nowrap;padding:12px 10px;}
+#page-billing td:last-child{white-space:nowrap;}
+#page-billing td:last-child .btn{display:inline-block;}
+
+/* ═══════════════════════════════════════════════════
+   MOBILE ≤600px
+═══════════════════════════════════════════════════ */
+@media(max-width:600px){
+  :root{--topbar-h:54px;}
+  .main-content{padding:10px;}
+  body{background:#eef1f7;}
+  .topbar{padding:0 12px 0 0;}
+  .brand-text{display:none;}
+  .topbar-date{display:none;}
+  .topbar-admin .admin-name{display:none;}
+  .logout-btn{font-size:10px;padding:5px 8px;}
+  .metrics{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
+  .metric-card{padding:12px 10px;}
+  .metric-icon{font-size:18px;margin-bottom:4px;}
+  .metric-label{font-size:9px;}
+  .metric-value{font-size:17px;}
+  .metric-sub{font-size:9px;}
+  .page-header{flex-direction:column;align-items:stretch;gap:8px;margin-bottom:14px;}
+  .page-title{font-size:16px;}
+  .ph-right .btn{width:100%;justify-content:center;}
+  .filter-bar,.billing-filter{display:flex;flex-direction:column;gap:8px;width:100%;}
+  .filter-search,.filter-select,.billing-search{width:100%;min-width:0;flex:none;}
+  .card{border-radius:12px;margin-bottom:10px;}
+  .card-header{padding:10px 12px;gap:6px;flex-wrap:wrap;}
+  .card-body{padding:10px 12px;}
+  .card-title{font-size:12px;}
+  .card-grid{grid-template-columns:1fr;gap:10px;}
+  .tbl-wrap{display:none !important;}
+  .mob-cards-container{display:block;}
+  .mob-card{padding:12px;margin-bottom:10px;}
+  .mob-card-grid{grid-template-columns:1fr 1fr;gap:6px;}
+  .mob-card-cell{padding:7px 8px;}
+  .mob-card-cell-val{font-size:12px;}
+  .form-grid{grid-template-columns:1fr;}
+  .form-group.full{grid-column:1;}
+  .form-section-title{grid-column:1;}
+  .form-actions{flex-direction:column-reverse;gap:8px;}
+  .form-actions .btn{width:100%;justify-content:center;}
+  .modal-body{padding:14px;}
+  .modal-footer{padding:10px 14px;gap:8px;flex-direction:column;}
+  .modal-footer .btn{width:100%;justify-content:center;}
+  .modal{border-radius:var(--radius-lg) var(--radius-lg) 0 0;}
+  .modal-overlay{align-items:flex-end;padding:0;}
+  .stu-stats{gap:8px;}
+  .stu-stat-card{min-width:calc(50% - 4px);padding:10px 12px;flex:1 1 calc(50% - 4px);}
+  .stu-stat-num{font-size:16px;}
+  .stu-stat-label{font-size:10px;}
+  .stu-stat-icon{width:30px;height:30px;font-size:14px;}
+  .profile-grid{grid-template-columns:1fr;}
+  .profile-header{padding:16px 16px 14px;}
+  .profile-avatar{width:48px;height:48px;font-size:18px;}
+  .profile-name{font-size:15px;}
+  .settings-grid{grid-template-columns:1fr;gap:10px;}
+  .toast-container{left:8px;right:8px;top:62px;}
+  .toast{min-width:0;width:100%;}
+  #detail-modal .modal{border-radius:var(--radius-lg) var(--radius-lg) 0 0;}
+  .profile-actions{flex-direction:column;}
+  .profile-actions .btn{width:100%;}
+  .logout-modal{max-width:100%;border-radius:var(--radius-lg) var(--radius-lg) 0 0;}
+  .logout-modal-overlay{align-items:flex-end;padding:0;}
+  .confirm-modal{max-width:100%;border-radius:var(--radius-lg) var(--radius-lg) 0 0;}
+  .confirm-modal-overlay{align-items:flex-end;padding:0;}
+}
+
+/* ═══════════════════════════════════════════════════
+   TINY ≤380px
+═══════════════════════════════════════════════════ */
+@media(max-width:380px){
+  .metrics{grid-template-columns:1fr 1fr;}
+  .metric-value{font-size:15px;}
+  .metric-label{font-size:8px;}
+  .mob-card-grid{grid-template-columns:1fr;}
+  .mob-card-actions .btn{font-size:10px;padding:6px 4px;}
+}
+
+/* ═══════════════════════════════════════════════════
+   PREMIUM CUSTOM DROPDOWN — replaces all <select>
+═══════════════════════════════════════════════════ */
+.csd-wrap{position:relative;width:100%;}
+.csd-wrap select{display:none !important;}
+
+.csd-trigger{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 12px;
+  border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--white);font-size:13px;color:var(--text);
+  font-family:'Lato',sans-serif;cursor:pointer;
+  transition:border-color 0.2s,box-shadow 0.2s;
+  user-select:none;min-height:42px;
+  gap:8px;
+}
+.csd-trigger:hover{border-color:#aab4c4;}
+.csd-trigger.open{border-color:var(--gold);box-shadow:0 0 0 3px rgba(201,168,76,0.12);}
+.csd-trigger.csd-placeholder{color:#b0bac9;}
+
+.csd-trigger-text{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;}
+
+.csd-arrow{
+  width:18px;height:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  transition:transform 0.25s cubic-bezier(0.34,1.56,0.64,1);
+  color:var(--muted);
+}
+.csd-arrow svg{display:block;}
+.csd-trigger.open .csd-arrow{transform:rotate(180deg);color:var(--gold);}
+
+.csd-panel{
+  position:fixed;z-index:99999;
+  background:var(--white);
+  border:1.5px solid var(--gold);
+  border-radius:var(--radius);
+  box-shadow:0 12px 40px rgba(30,45,77,0.18),0 2px 8px rgba(30,45,77,0.1);
+  overflow:hidden;
+  opacity:0;transform:translateY(-6px) scaleY(0.97);transform-origin:top center;
+  transition:opacity 0.18s ease,transform 0.2s cubic-bezier(0.34,1.2,0.64,1);
+  pointer-events:none;
+  min-width:160px;
+}
+.csd-panel.open{opacity:1;transform:translateY(0) scaleY(1);pointer-events:auto;}
+.csd-panel.drop-up{transform-origin:bottom center;}
+.csd-panel.drop-up:not(.open){transform:translateY(6px) scaleY(0.97);}
+.csd-panel.drop-up.open{transform:translateY(0) scaleY(1);}
+
+.csd-search-wrap{
+  padding:8px 10px;
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;background:var(--white);z-index:1;
+  display:none;
+}
+.csd-search-wrap.visible{display:block;}
+.csd-search{
+  width:100%;padding:7px 10px 7px 30px;
+  border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  font-size:12px;font-family:'Lato',sans-serif;
+  background:var(--light);color:var(--text);
+  transition:border-color 0.15s;outline:none;
+}
+.csd-search:focus{border-color:var(--gold);}
+.csd-search-icon{
+  position:absolute;left:18px;top:50%;transform:translateY(-50%);
+  color:var(--muted);font-size:12px;pointer-events:none;
+}
+
+.csd-list{
+  max-height:220px;overflow-y:auto;padding:4px 0;
+  scrollbar-width:thin;scrollbar-color:var(--border) transparent;
+}
+.csd-list::-webkit-scrollbar{width:4px;}
+.csd-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+
+@media(max-width:1261px){
+  .csd-list{max-height:160px;}
+  .csd-panel{max-width:calc(100vw - 16px);}
+}
+
+.csd-option{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 14px;font-size:13px;cursor:pointer;
+  font-family:'Lato',sans-serif;color:var(--text);
+  transition:background 0.12s;
+  position:relative;
+}
+.csd-option:hover{background:rgba(201,168,76,0.07);}
+.csd-option.selected{
+  background:rgba(201,168,76,0.1);color:var(--navy-dark);font-weight:700;
+}
+.csd-option.selected::after{
+  content:'✓';position:absolute;right:14px;color:var(--gold);font-size:12px;font-weight:900;
+}
+.csd-option.disabled{color:var(--muted);cursor:default;pointer-events:none;font-style:italic;}
+.csd-option.highlighted{background:rgba(201,168,76,0.12);}
+.csd-no-results{padding:16px 14px;font-size:12px;color:var(--muted);text-align:center;font-style:italic;}
+
+/* Badge/icon dot for status options */
+.csd-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.csd-dot-green{background:var(--success);}
+.csd-dot-red{background:var(--danger);}
+.csd-dot-yellow{background:var(--warning);}
+.csd-dot-blue{background:var(--info);}
+
+/* Filter-bar custom select sizing */
+.filter-bar .csd-wrap,.billing-filter .csd-wrap{flex:1;min-width:0;}
+.filter-bar .csd-trigger,.billing-filter .csd-trigger{padding:9px 10px;font-size:13px;min-height:38px;}
+
+/* Full-width variant */
+.csd-full .csd-wrap,.csd-full{width:100%;}
+
+</style>
+
+</head>
+<body>
+
+<!-- ══════════ LOGIN SCREEN ══════════ -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+     <div class="login-logo-circle">
+  <img src="images/Mission For Excellence Logo1.jpg" alt="Logo" style="width:100%;">
+</div>
+      <div class="login-title">Mission For Excellence</div>
+      <div class="login-sub"> Management System</div>
+    </div>
+    <div class="login-divider"></div>
+    <div class="login-group">
+      <label>Username</label>
+      <input type="text" id="login-user" placeholder="Enter username" autocomplete="username">
+    </div>
+    <div class="login-group">
+      <label>Password</label>
+      <input type="password" id="login-pass" placeholder="Enter password" autocomplete="current-password">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Sign In →</button>
+    <div class="login-error" id="login-err">Invalid username or password</div>
+    <div class="login-footer">Mission For Excellence Tutorials · Sagara - 577401</div>
+  </div>
+</div>
+
+<!-- ══════════ TOAST CONTAINER ══════════ -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- ══════════ LOGOUT CONFIRMATION MODAL ══════════ -->
+<div class="logout-modal-overlay hidden" id="logout-modal">
+  <div class="logout-modal">
+    <div class="logout-modal-header">
+      <span class="logout-modal-icon">👋</span>
+      <div class="logout-modal-title">Sign Out</div>
+      <div class="logout-modal-sub">Mission For Excellence Tutorials</div>
+    </div>
+    <div class="logout-modal-body">
+      <p class="logout-modal-text">Are you sure you want to sign out? Any unsaved changes will be lost.</p>
+      <div class="logout-modal-actions">
+        <button class="btn btn-outline btn-lg" onclick="closeLogoutModal()">Cancel</button>
+        <button class="btn btn-danger btn-lg" onclick="confirmLogout()">Sign Out</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ CONFIRM DELETE MODAL (replaces browser confirm) ══════════ -->
+<div class="confirm-modal-overlay hidden" id="confirm-modal">
+  <div class="confirm-modal">
+    <div class="confirm-modal-header">
+      <div class="confirm-modal-icon-wrap" id="confirm-icon-wrap">🗑️</div>
+      <div class="confirm-modal-title" id="confirm-title">Delete Record</div>
+    </div>
+    <div class="confirm-modal-body">
+      <p class="confirm-modal-text" id="confirm-text">Are you sure you want to delete this record? This action cannot be undone.</p>
+      <div class="confirm-modal-actions">
+        <button class="btn btn-outline btn-lg" onclick="closeConfirmModal()">Cancel</button>
+        <button class="btn btn-danger btn-lg" id="confirm-ok-btn">Delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ APP SHELL ══════════ -->
+<div id="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <button class="sidebar-toggle" onclick="toggleSidebar()" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="topbar-brand">
+        <!-- MFE Logo in brand circle -->
+        <div class="brand-circle">
+  <img src="images/Mission For Excellence Logo1.jpg" alt="Logo" style="width:100%;">
+</div>
+        <div class="brand-text">Mission For Excellence<span>Tutorials</span></div>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <span class="topbar-date" id="topbar-date"></span>
+      <div class="topbar-admin">
+        <div class="admin-avatar">A</div>
+        <span class="admin-name">Admin</span>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">⏏ Logout</button>
+    </div>
+  </div>
+
+  <!-- SIDEBAR OVERLAY -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-section">Overview</div>
+    <div class="nav-item active" data-page="dashboard" onclick="showPage('dashboard',this)">
+      <span class="nav-icon">▦</span><span class="nav-label">Dashboard</span>
+    </div>
+    <div class="sidebar-section">Management</div>
+    <div class="nav-item" data-page="students" onclick="showPage('students',this)">
+      <span class="nav-icon">👥</span><span class="nav-label">Students</span>
+    </div>
+    <div class="nav-item" data-page="billing" onclick="showPage('billing',this)">
+      <span class="nav-icon">💳</span><span class="nav-label">Billing</span>
+      <span class="nav-badge" id="unpaid-badge">0</span>
+    </div>
+    <div class="sidebar-section">Analytics</div>
+    <div class="nav-item" data-page="reports" onclick="showPage('reports',this)">
+      <span class="nav-icon">📊</span><span class="nav-label">Reports</span>
+    </div>
+    <div class="sidebar-section">Tools</div>
+    <div class="nav-item" data-page="reminders" onclick="showPage('reminders',this)">
+      <span class="nav-icon">💬</span><span class="nav-label">Reminders</span>
+    </div>
+    <div class="nav-item" data-page="export" onclick="showPage('export',this)">
+      <span class="nav-icon">📥</span><span class="nav-label">Export</span>
+    </div>
+    <div class="nav-item" data-page="settings" onclick="showPage('settings',this)">
+      <span class="nav-icon">⚙</span><span class="nav-label">Settings</span>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main-content" id="main-content">
+
+    <!-- ══════════ DASHBOARD ══════════ -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div class="ph-left">
+          <div class="page-title">Dashboard</div>
+          <div class="page-subtitle">Welcome back — here's your overview</div>
+        </div>
+        <div class="ph-right">
+          <button class="btn btn-primary" onclick="openStudentModal()">
+            <span>＋</span> <span>Add Student</span>
+          </button>
+        </div>
+      </div>
+      <div class="metrics" id="dash-metrics">
+        <div class="metric-card mc-green"><div class="spinner"></div></div>
+        <div class="metric-card mc-gold"><div class="spinner"></div></div>
+        <div class="metric-card mc-blue"><div class="spinner"></div></div>
+        <div class="metric-card mc-red"><div class="spinner"></div></div>
+      </div>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Recent Payments</span>
+            <button class="btn btn-outline btn-sm" onclick="showPage('billing',null)">View All</button>
+          </div>
+          <div class="card-body" id="dash-recent"></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Pending Payments</span>
+            <button class="btn btn-outline btn-sm" onclick="showPage('reminders',null)">Send Reminders</button>
+          </div>
+          <div class="card-body" id="dash-pending"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ STUDENTS ══════════ -->
+    <div class="page" id="page-students">
+      <div class="page-header">
+        <div class="ph-left">
+          <div class="page-title">Students</div>
+          <div class="page-subtitle">Student database — personal details only</div>
+        </div>
+        <div class="ph-right">
+          <button class="btn btn-primary" onclick="openStudentModal()">＋ Add Student</button>
+        </div>
+      </div>
+      <div class="stu-stats" id="stu-stats"></div>
+      <div class="card">
+        <div class="card-header" style="padding:14px 16px;">
+          <div class="filter-bar" style="width:100%">
+            <input class="filter-search" id="s-search" placeholder="🔍  Search by name, phone, father's name…" oninput="renderStudents()">
+            <select class="filter-select" id="s-filter-class" onchange="renderStudents()">
+              <option value="">All Classes</option>
+              <option>Class 5</option><option>Class 6</option><option>Class 7</option>
+              <option>Class 8</option><option>Class 9</option><option>Class 10</option>
+            </select>
+            <select class="filter-select" id="s-filter-gender" onchange="renderStudents()">
+              <option value="">All Genders</option>
+              <option>Male</option><option>Female</option>
+            </select>
+            
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>#</th>
+              <th>Student</th>
+              <th>Class</th>
+              <th>Gender</th>
+              <th>Father's Name</th>
+              <th>Contact</th>
+              <th>Date of Birth</th>
+              <th>Actions</th>
+            </tr></thead>
+            <tbody id="students-tbody"></tbody>
+          </table>
+        </div>
+        <div class="mob-cards-container" id="students-mob" style="padding:12px"></div>
+      </div>
+    </div>
+
+    <!-- ══════════ BILLING ══════════ -->
+    <div class="page" id="page-billing">
+      <div class="page-header">
+        <div class="ph-left">
+          <div class="page-title">Billing</div>
+          <div class="page-subtitle">Fee collection — record payments &amp; track dues</div>
+        </div>
+        <div class="ph-right">
+          <button class="btn btn-primary" onclick="openPaymentModal()">＋ Record Payment</button>
+        </div>
+      </div>
+      <div class="metrics" id="billing-metrics" style="margin-bottom:20px"></div>
+      <div class="card">
+        <div class="card-header" style="padding:14px 16px;">
+          <div class="filter-bar billing-filter" style="width:100%">
+            <input class="filter-search billing-search" id="b-search" placeholder="🔍  Search by student name or class…" oninput="renderBilling()">
+            <select class="filter-select" id="b-month" onchange="renderBilling()">
+              <option value="">All Months</option>
+            </select>
+            <select class="filter-select" id="b-status" onchange="renderBilling()">
+              <option value="">All Status</option>
+              <option>Paid</option><option>Unpaid</option><option>Partial</option>
+            </select>
+            <select class="filter-select" id="b-class" onchange="renderBilling()">
+              <option value="">All Classes</option>
+              <option>Class 5</option><option>Class 6</option><option>Class 7</option>
+              <option>Class 8</option><option>Class 9</option><option>Class 10</option>
+            </select>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr>
+              <th>#</th><th>Student</th><th>Class</th><th>Month</th>
+              <th>Monthly Fee</th><th>Amount Paid</th><th>Balance</th>
+              <th>Mode</th><th>Date</th><th>Status</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="billing-tbody"></tbody>
+          </table>
+        </div>
+        <div class="mob-cards-container" id="billing-mob" style="padding:12px"></div>
+      </div>
+    </div>
+
+    <!-- ══════════ REPORTS ══════════ -->
+    <div class="page" id="page-reports">
+      <div class="page-header">
+        <div class="ph-left">
+          <div class="page-title">Reports</div>
+          <div class="page-subtitle">Financial analytics &amp; insights</div>
+        </div>
+        <div class="ph-right">
+          <button class="btn btn-outline" onclick="showPage('export',null)">📥 Export</button>
+        </div>
+      </div>
+      <div class="metrics" id="report-metrics"></div>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Class-wise Collection</span></div>
+          <div class="card-body" id="rpt-class"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Monthly Collection</span></div>
+          <div class="card-body" id="rpt-monthly"></div>
+        </div>
+      </div>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Payment Mode Breakdown</span></div>
+          <div class="card-body" id="rpt-mode"></div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Collection Rate by Class</span></div>
+          <div class="card-body" id="rpt-rate"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ REMINDERS ══════════ -->
+    <div class="page" id="page-reminders">
+      <div class="page-header">
+        <div class="ph-left">
+          <div class="page-title">WhatsApp Reminders</div>
+          <div class="page-subtitle">Send fee reminders to parents via WhatsApp</div>
+        </div>
+      </div>
+      <div class="card" style="margin-bottom:16px">
+        <div class="card-header"><span class="card-title">ℹ How Reminders Work</span></div>
+        <div class="card-body" style="padding:16px 20px">
+          <p class="fs-13 text-muted" style="line-height:1.8">
+            This page shows all students with <strong>Unpaid</strong> or <strong>Partial</strong> fee status.
+            Click <strong>💬 WhatsApp</strong> next to any student to open WhatsApp with a pre-filled message.
+            The message uses the template below — you can customize it before sending.
+            <em>Reminders will only be sent to students who have a contact number saved.</em>
+          </p>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Message Template</span></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Reminder Message</label>
+            <textarea class="form-input" id="reminder-template" rows="5">Dear Parent, this is a reminder that the monthly fee for *{name}* ({class}) is due for *{month}*. Amount: *₹{amount}*. Please pay at the earliest. Thank you! — Mission For Excellence</textarea>
+            <span class="form-hint">Variables: {name} = student name, {class} = class, {month} = month, {amount} = fee amount</span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Unpaid / Partial Students</span>
+          <button class="btn btn-whatsapp btn-sm" onclick="sendAllReminders()">💬 Send All Reminders</button>
+        </div>
+        <div class="card-body" id="reminder-list"></div>
+      </div>
+    </div>
+
+    <!-- ══════════ EXPORT ══════════ -->
+    <div class="page" id="page-export">
+      <div class="page-header">
+        <div class="ph-left">
+          <div class="page-title">Export Data</div>
+          <div class="page-subtitle">Download records as Excel files</div>
+        </div>
+      </div>
+      <div class="card-grid">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Students Report</span></div>
+          <div class="card-body">
+            <p class="text-muted fs-13" style="margin-bottom:16px;line-height:1.7">Export a complete list of all students with their details, class, monthly fee, and current payment status.</p>
+            <div class="form-group" style="margin-bottom:12px">
+              <label class="form-label">Filter by Class</label>
+              <select class="form-input" id="exp-class">
+                <option value="">All Classes</option>
+                <option>Class 5</option><option>Class 6</option><option>Class 7</option>
+                <option>Class 8</option><option>Class 9</option><option>Class 10</option>
+              </select>
+            </div>
+            <button class="btn btn-success w-full" onclick="exportStudents()">📥 Export Students to Excel</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Payments Report</span></div>
+          <div class="card-body">
+            <p class="text-muted fs-13" style="margin-bottom:16px;line-height:1.7">Export all payment transactions with student names, months, amounts, payment modes, and receipt numbers.</p>
+            <div class="form-group" style="margin-bottom:12px">
+              <label class="form-label">Filter by Month</label>
+              <select class="form-input" id="exp-month">
+                <option value="">All Months</option>
+              </select>
+            </div>
+            <button class="btn btn-success w-full" onclick="exportPayments()">📥 Export Payments to Excel</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Pending Fees Report</span></div>
+          <div class="card-body">
+            <p class="text-muted fs-13" style="margin-bottom:16px;line-height:1.7">Export a list of all students with unpaid or partially paid fees — ideal for follow-up and collections.</p>
+            <button class="btn btn-danger w-full" onclick="exportPending()">📥 Export Pending Fees to Excel</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Full Summary Report</span></div>
+          <div class="card-body">
+            <p class="text-muted fs-13" style="margin-bottom:16px;line-height:1.7">Export a complete financial summary including all students and all payments in a multi-sheet Excel file.</p>
+            <button class="btn btn-primary w-full" onclick="exportFull()">📥 Export Full Report to Excel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ SETTINGS ══════════ -->
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <div class="ph-left">
+          <div class="page-title">Settings</div>
+          <div class="page-subtitle">Manage credentials and preferences</div>
+        </div>
+      </div>
+      <div class="settings-grid">
+        <div class="card" style="margin-bottom:0">
+          <div class="card-header"><span class="card-title">🔒 Change Password</span></div>
+          <div class="card-body">
+            <div id="pw-alert"></div>
+            <div class="form-group" style="margin-bottom:14px">
+              <label class="form-label">Current Password</label>
+              <input type="password" class="form-input" id="pw-current" placeholder="Enter current password">
+            </div>
+            <div class="form-group" style="margin-bottom:14px">
+              <label class="form-label">New Password</label>
+              <input type="password" class="form-input" id="pw-new" placeholder="Enter new password">
+            </div>
+            <div class="form-group" style="margin-bottom:20px">
+              <label class="form-label">Confirm New Password</label>
+              <input type="password" class="form-input" id="pw-confirm" placeholder="Re-enter new password">
+            </div>
+            <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="changePassword()">Update Password</button>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:0">
+          <div class="card-header"><span class="card-title">🏫 Tutorials Information</span></div>
+          <div class="card-body" style="padding-bottom:8px">
+            <div class="settings-info-item">
+              <div class="settings-info-icon">🏛</div>
+              <div>
+                <div class="settings-info-label">Tutorials Name</div>
+                <div class="settings-info-val">Mission For Excellence Tutorials</div>
+              </div>
+            </div>
+            <div class="settings-info-item">
+              <div class="settings-info-icon">📍</div>
+              <div>
+                <div class="settings-info-label">Location</div>
+                <div class="settings-info-val">Bangarappa Circle, Near Kagodu Rangamandira</div>
+                <div class="fs-12 text-muted" style="margin-top:2px">Sooranagadde Road, Sagara – 577401, Karnataka</div>
+              </div>
+            </div>
+            <div class="settings-info-item">
+              <div class="settings-info-icon">📞</div>
+              <div>
+                <div class="settings-info-label">Founder — Mamatha N G</div>
+                <div class="settings-info-val">+91 98446 58158</div>
+              </div>
+            </div>
+            <div class="settings-info-item">
+              <div class="settings-info-icon">✉</div>
+              <div>
+                <div class="settings-info-label">Email</div>
+                 <div class="settings-info-val">info.missionforexcellence@gmail.com</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══════════ STUDENT MODAL ══════════ -->
+<div class="modal-overlay hidden" id="student-modal">
+  <div class="modal">
+    <div class="modal-header modal-header-gold">
+      <h3 id="student-modal-title">Add New Student</h3>
+      <button class="modal-close" onclick="closeModal('student-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="student-alert"></div>
+      <div class="form-grid">
+        <div class="form-section-title">Personal Information</div>
+        <div class="form-group"><label class="form-label">Full Name *</label><input class="form-input" id="sf-name" placeholder="Student's full name"></div>
+        <div class="form-group"><label class="form-label">Date of Birth</label><input type="date" class="form-input" id="sf-dob"></div>
+        <div class="form-group"><label class="form-label">Gender</label>
+          <select class="form-input" id="sf-gender"><option value="">Select</option><option>Male</option><option>Female</option></select>
+        </div>
+        <div class="form-group"><label class="form-label">Class *</label>
+          <select class="form-input" id="sf-class">
+            <option value="">Select Class</option>
+            <option>Class 5</option><option>Class 6</option><option>Class 7</option>
+            <option>Class 8</option><option>Class 9</option><option>Class 10</option>
+          </select>
+        </div>
+        <div class="form-section-title">Family Details</div>
+        <div class="form-group"><label class="form-label">Father's Name</label><input class="form-input" id="sf-father" placeholder="Father's full name"></div>
+        <div class="form-group"><label class="form-label">Mother's Name</label><input class="form-input" id="sf-mother" placeholder="Mother's full name"></div>
+        <div class="form-section-title">Contact & Fee</div>
+        <div class="form-group"><label class="form-label">Contact Number *</label><input class="form-input" id="sf-phone" placeholder="10-digit mobile" maxlength="10" inputmode="numeric"></div>
+        <div class="form-group"><label class="form-label">Monthly Fee (₹) *</label><input type="number" class="form-input" id="sf-fee" placeholder="e.g. 1500" min="0"></div>
+        <div class="form-group full"><label class="form-label">Address</label><textarea class="form-input" id="sf-address" rows="2" placeholder="Home address"></textarea></div>
+        <div class="form-group full"><label class="form-label">Notes / Remarks</label><textarea class="form-input" id="sf-notes" rows="2" placeholder="Any additional notes"></textarea></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('student-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStudent()" id="student-save-btn">Save Student</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ STUDENT DETAIL MODAL ══════════ -->
+<div class="modal-overlay hidden" id="detail-modal">
+  <div class="modal modal-wide">
+    <div id="detail-body"></div>
+  </div>
+</div>
+
+<!-- ══════════ PAYMENT MODAL ══════════ -->
+<div class="modal-overlay hidden" id="payment-modal">
+  <div class="modal">
+    <div class="modal-header modal-header-gold">
+      <h3>Record Payment</h3>
+      <button class="modal-close" onclick="closeModal('payment-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="payment-alert"></div>
+      <div class="form-grid">
+        <div class="form-group full"><label class="form-label">Student *</label>
+          <select class="form-input" id="pf-student" onchange="onStudentSelect()">
+            <option value="">Select Student</option>
+          </select>
+        </div>
+        <div class="form-group" id="pf-fee-display" style="display:none">
+          <label class="form-label">Monthly Fee</label>
+          <div class="form-input" style="background:var(--light);color:var(--muted)" id="pf-fee-show">—</div>
+        </div>
+        <div class="form-group"><label class="form-label">Month *</label>
+          <select class="form-input" id="pf-month">
+            <option value="">Select Month</option>
+            <option>June 2025</option><option>July 2025</option><option>August 2025</option>
+            <option>September 2025</option><option>October 2025</option><option>November 2025</option>
+            <option>December 2025</option><option>January 2026</option><option>February 2026</option>
+            <option>March 2026</option><option>April 2026</option><option>May 2026</option>
+            <option>June 2026</option><option>July 2026</option><option>August 2026</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Amount Paid (₹) *</label><input type="number" class="form-input" id="pf-amount" placeholder="Amount paid" min="0"></div>
+        <div class="form-group"><label class="form-label">Payment Mode</label>
+          <select class="form-input" id="pf-mode">
+            <option>Cash</option><option>UPI</option><option>Bank Transfer</option><option>Cheque</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Payment Date</label><input type="date" class="form-input" id="pf-date"></div>
+        <div class="form-group"><label class="form-label">Receipt No.</label><input class="form-input" id="pf-receipt" placeholder="Auto-generated"></div>
+        <div class="form-group full"><label class="form-label">Remarks</label><input class="form-input" id="pf-remarks" placeholder="Optional note"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('payment-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="savePayment()">Save &amp; Generate Receipt</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ RECEIPT MODAL ══════════ -->
+<div class="modal-overlay hidden" id="receipt-modal">
+  <div class="modal modal-narrow">
+    <div class="modal-header modal-header-gold">
+      <h3>Payment Receipt</h3>
+      <button class="modal-close" onclick="closeModal('receipt-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="receipt-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('receipt-modal')">Close</button>
+      <button class="btn btn-navy" onclick="window.print()">🖨 Print Receipt</button>
+    </div>
+  </div>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ═══════════════════════════════════════════════════
+// CREDENTIALS & AUTH
+// ═══════════════════════════════════════════════════
+const DEFAULT_CREDS = {username:'admin', password:'mfe2025'};
+let CREDS = JSON.parse(localStorage.getItem('mfe_creds') || JSON.stringify(DEFAULT_CREDS));
+let isLoggedIn = sessionStorage.getItem('mfe_auth') === '1';
+
+function doLogin(){
+  const u = document.getElementById('login-user').value.trim();
+  const p = document.getElementById('login-pass').value;
+  if(u === CREDS.username && p === CREDS.password){
+    sessionStorage.setItem('mfe_auth','1');
+    document.getElementById('login-screen').classList.add('hidden');
+    document.getElementById('app').classList.add('visible');
+    init();
+  } else {
+    document.getElementById('login-err').style.display='block';
+    setTimeout(()=>{ document.getElementById('login-err').style.display='none'; },3000);
+  }
+}
+
+function doLogout(){
+  document.getElementById('logout-modal').classList.remove('hidden');
+}
+function closeLogoutModal(){
+  document.getElementById('logout-modal').classList.add('hidden');
+}
+function confirmLogout(){
+  sessionStorage.removeItem('mfe_auth');
+  location.reload();
+}
+document.getElementById('logout-modal').addEventListener('click', function(e){
+  if(e.target === this) closeLogoutModal();
+});
+
+function changePassword(){
+  const cur = document.getElementById('pw-current').value;
+  const nw = document.getElementById('pw-new').value;
+  const cf = document.getElementById('pw-confirm').value;
+  if(cur !== CREDS.password){ showInlineAlert('pw-alert','Current password incorrect','error'); return; }
+  if(nw.length < 4){ showInlineAlert('pw-alert','New password must be at least 4 characters','error'); return; }
+  if(nw !== cf){ showInlineAlert('pw-alert','Passwords do not match','error'); return; }
+  CREDS.password = nw;
+  localStorage.setItem('mfe_creds', JSON.stringify(CREDS));
+  showInlineAlert('pw-alert','Password updated successfully','success');
+  document.getElementById('pw-current').value='';
+  document.getElementById('pw-new').value='';
+  document.getElementById('pw-confirm').value='';
+}
+
+document.getElementById('login-pass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('login-user').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('login-pass').focus(); });
+
+if(isLoggedIn){
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app').classList.add('visible');
+}
+
+// ═══════════════════════════════════════════════════
+// CONFIRM MODAL (replaces browser confirm())
+// ═══════════════════════════════════════════════════
+let _confirmCallback = null;
+
+function showConfirm({ title, text, icon='🗑️', iconClass='', okLabel='Delete', okClass='btn-danger', onOk }){
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-text').textContent = text;
+  const wrap = document.getElementById('confirm-icon-wrap');
+  wrap.textContent = icon;
+  wrap.className = 'confirm-modal-icon-wrap' + (iconClass ? ' '+iconClass : '');
+  const okBtn = document.getElementById('confirm-ok-btn');
+  okBtn.textContent = okLabel;
+  okBtn.className = 'btn btn-lg ' + okClass;
+  _confirmCallback = onOk;
+  okBtn.onclick = function(){
+    // 1. Save a copy of the function first
+    const callbackToRun = _confirmCallback; 
+    
+    // 2. Close the modal (which sets _confirmCallback to null)
+    closeConfirmModal(); 
+    
+    // 3. Run the saved copy!
+    if(callbackToRun) callbackToRun(); 
+  };
+  document.getElementById('confirm-modal').classList.remove('hidden');
+}
+
+function closeConfirmModal(){
+  document.getElementById('confirm-modal').classList.add('hidden');
+  _confirmCallback = null;
+}
+
+document.getElementById('confirm-modal').addEventListener('click', function(e){
+  if(e.target === this) closeConfirmModal();
+});
+
+// ═══════════════════════════════════════════════════
+// STORAGE / FIREBASE
+// ═══════════════════════════════════════════════════
+let db = {students:[], payments:[]};
+
+function loadDB() {
+  window.fb.onSnapshot(
+    window.fb.collection(window.firestore, "students"),
+    (snapshot) => {
+      db.students = [];
+      snapshot.forEach(doc => {
+        // FIXED: Real ID is placed after the spread operator
+        db.students.push({ ...doc.data(), id: doc.id }); 
+      });
+      renderStudents();
+      renderDashboard();
+      updateBadge();
+    }
+  );
+  window.fb.onSnapshot(
+    window.fb.collection(window.firestore, "payments"),
+    (snapshot) => {
+      db.payments = [];
+      snapshot.forEach(doc => {
+        // FIXED: Real ID is placed after the spread operator
+        db.payments.push({ ...doc.data(), id: doc.id }); 
+      });
+      renderBilling();
+      renderDashboard();
+      updateBadge();
+    }
+  );
+}
+
+function genId(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function genReceipt(){ return 'MFE-'+new Date().getFullYear()+'-'+String(db.payments.length+1).padStart(4,'0'); }
+
+// ═══════════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════════
+let currentPage = 'dashboard';
+let sidebarCollapsed = false;
+
+function showPage(id, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const page = document.getElementById('page-'+id);
+  if(page) page.classList.add('active');
+  if(el) el.classList.add('active');
+  else {
+    const ni = document.querySelector(`[data-page="${id}"]`);
+    if(ni) ni.classList.add('active');
+  }
+  currentPage = id;
+  closeSidebar();
+  if(id==='dashboard') renderDashboard();
+  if(id==='students') renderStudents();
+  if(id==='billing'){ populateBillingMonths(); renderBilling(); }
+  if(id==='reports') renderReports();
+  if(id==='reminders') renderReminders();
+  if(id==='export') populateExportMonths();
+}
+
+function toggleSidebar(){
+  const sb = document.getElementById('sidebar');
+  const mc = document.getElementById('main-content');
+  const ov = document.getElementById('sidebar-overlay');
+  if(window.innerWidth > 900){
+    sidebarCollapsed = !sidebarCollapsed;
+    sb.classList.toggle('collapsed', sidebarCollapsed);
+    mc.classList.toggle('expanded', sidebarCollapsed);
+  } else {
+    sb.classList.toggle('mobile-open');
+    ov.classList.toggle('active');
+  }
+}
+
+function closeSidebar(){
+  const sb = document.getElementById('sidebar');
+  const ov = document.getElementById('sidebar-overlay');
+  if(window.innerWidth <= 900){
+    sb.classList.remove('mobile-open');
+    ov.classList.remove('active');
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// MODAL HELPERS
+// ═══════════════════════════════════════════════════
+function openModal(id){ document.getElementById(id).classList.remove('hidden'); }
+function closeModal(id){ document.getElementById(id).classList.add('hidden'); }
+
+document.querySelectorAll('.modal-overlay').forEach(ov=>{
+  ov.addEventListener('click', e=>{ if(e.target===ov) ov.classList.add('hidden'); });
+});
+
+// ═══════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════
+function toast(msg, type='success'){
+  const icons={success:'✓',error:'✕',info:'ℹ'};
+  const el=document.createElement('div');
+  el.className=`toast ${type}`;
+  el.innerHTML=`<span>${icons[type]||'✓'}</span><span>${msg}</span>`;
+  document.getElementById('toast-container').appendChild(el);
+  setTimeout(()=>el.remove(),3500);
+}
+
+function showInlineAlert(id, msg, type){
+  const el=document.getElementById(id);
+  if(!el) return;
+  el.innerHTML=`<div class="inline-alert ${type}">${msg}</div>`;
+  setTimeout(()=>{ if(el) el.innerHTML=''; },4000);
+}
+
+// ═══════════════════════════════════════════════════
+// STUDENT CRUD
+// ═══════════════════════════════════════════════════
+let editSid = null;
+
+function openStudentModal(sid){
+  editSid = sid||null;
+  document.getElementById('student-modal-title').textContent = sid ? 'Edit Student' : 'Add New Student';
+  document.getElementById('student-alert').innerHTML='';
+  const fields=['sf-name','sf-dob','sf-gender','sf-class','sf-father','sf-mother','sf-phone','sf-fee','sf-address','sf-notes'];
+  fields.forEach(f=>{ const el=document.getElementById(f); if(el) el.value=''; });
+  if(sid){
+    const s=db.students.find(x=>x.id===sid);
+    if(s){
+      document.getElementById('sf-name').value=s.name||'';
+      document.getElementById('sf-dob').value=s.dob||'';
+      document.getElementById('sf-gender').value=s.gender||'';
+      document.getElementById('sf-class').value=s.cls||'';
+      document.getElementById('sf-father').value=s.father||'';
+      document.getElementById('sf-mother').value=s.mother||'';
+      document.getElementById('sf-phone').value=s.phone||'';
+      document.getElementById('sf-fee').value=s.fee||'';
+      document.getElementById('sf-address').value=s.address||'';
+      document.getElementById('sf-notes').value=s.notes||'';
+    }
+  }
+  openModal('student-modal');
+  document.getElementById('sf-name').focus();
+}
+
+async function saveStudent(){
+  const name=document.getElementById('sf-name').value.trim();
+  const cls=document.getElementById('sf-class').value;
+  const phone=document.getElementById('sf-phone').value.trim();
+  const fee=parseFloat(document.getElementById('sf-fee').value)||0;
+  
+  if(!name){ showInlineAlert('student-alert','Student name is required','error'); return; }
+  if(!cls){ showInlineAlert('student-alert','Please select a class','error'); return; }
+  if(!fee){ showInlineAlert('student-alert','Monthly fee is required','error'); return; }
+
+  const btn=document.getElementById('student-save-btn');
+  btn.textContent='Saving…'; btn.disabled=true;
+
+  const data={
+    name, cls, phone, fee,
+    dob:document.getElementById('sf-dob').value,
+    gender:document.getElementById('sf-gender').value,
+    father:document.getElementById('sf-father').value.trim(),
+    mother:document.getElementById('sf-mother').value.trim(),
+    address:document.getElementById('sf-address').value.trim(),
+    notes:document.getElementById('sf-notes').value.trim(),
+    createdAt:editSid?(db.students.find(x=>x.id===editSid)||{}).createdAt:new Date().toISOString()
+  };
+
+  // FIXED: Wrapped in try/catch to handle errors without breaking the UI
+  try {
+    if(editSid){
+      await window.fb.updateDoc(window.fb.doc(window.firestore,"students",editSid),data);
+    } else {
+      await window.fb.addDoc(window.fb.collection(window.firestore,"students"),data);
+    }
+
+    btn.textContent='Save Student'; btn.disabled=false;
+    closeModal('student-modal');
+    toast(editSid?'Student updated!':'Student added!');
+    updateBadge();
+    if(currentPage==='students') renderStudents();
+    if(currentPage==='dashboard') renderDashboard();
+  } catch(err) {
+    console.error('Error saving student:', err);
+    btn.textContent='Save Student'; 
+    btn.disabled=false;
+    showInlineAlert('student-alert', 'Database error: ' + err.message, 'error');
+  }
+}
+
+function deleteStudent(sid){
+  const s = db.students.find(x=>x.id===sid);
+  if(!s) return;
+  const relatedPayments = db.payments.filter(p=>p.studentId===sid);
+  const payCount = relatedPayments.length;
+  showConfirm({
+    title: 'Delete Student',
+    text: payCount > 0
+      ? 'Delete "' + s.name + '" and ' + payCount + ' payment record' + (payCount>1?'s':'') + '? This cannot be undone.'
+      : 'Delete "' + s.name + '"? This cannot be undone.',
+    icon: '🗑️',
+    okLabel: 'Delete Student',
+    okClass: 'btn-danger',
+    onOk: async () => {
+      try {
+        for (const pay of relatedPayments) {
+          await window.fb.deleteDoc(window.fb.doc(window.firestore, "payments", pay.id));
+        }
+        await window.fb.deleteDoc(window.fb.doc(window.firestore, "students", sid));
+        toast(payCount > 0 ? 'Student deleted (' + payCount + ' payment' + (payCount>1?'s':'') + ' also removed)' : 'Student deleted', 'info');
+        updateBadge();
+        renderStudents();
+        if(currentPage==='billing') renderBilling();
+        if(currentPage==='dashboard') renderDashboard();
+      } catch(err) {
+        console.error('Delete student error:', err);
+        toast('Error deleting student: ' + err.message, 'error');
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// PAYMENT STATUS
+// ═══════════════════════════════════════════════════
+function getStudentStatus(sid){
+  const s=db.students.find(x=>x.id===sid); if(!s) return 'Unpaid';
+  const pays=db.payments.filter(p=>p.studentId===sid);
+  if(!pays.length) return 'Unpaid';
+  const latest=pays.sort((a,b)=>b.createdAt.localeCompare(a.createdAt))[0];
+  const bal=s.fee-latest.amount;
+  if(bal<=0) return 'Paid';
+  if(latest.amount>0) return 'Partial';
+  return 'Unpaid';
+}
+
+function getLatestPay(sid){ return db.payments.filter(p=>p.studentId===sid).sort((a,b)=>b.createdAt.localeCompare(a.createdAt))[0]||null; }
+function getTotalPaid(sid){ return db.payments.filter(p=>p.studentId===sid).reduce((a,p)=>a+p.amount,0); }
+
+// ═══════════════════════════════════════════════════
+// RENDER STUDENTS
+// ═══════════════════════════════════════════════════
+function renderStudents(){
+  const search=(document.getElementById('s-search')||{}).value||'';
+  const filterCls=(document.getElementById('s-filter-class')||{}).value||'';
+  const filterGender=(document.getElementById('s-filter-gender')||{}).value||'';
+  let list=[...db.students];
+  if(search) list=list.filter(s=>
+    s.name.toLowerCase().includes(search.toLowerCase())||
+    (s.phone||'').includes(search)||
+    (s.father||'').toLowerCase().includes(search.toLowerCase())||
+    (s.mother||'').toLowerCase().includes(search.toLowerCase())
+  );
+  if(filterCls) list=list.filter(s=>s.cls===filterCls);
+  if(filterGender) list=list.filter(s=>s.gender===filterGender);
+
+  const statEl=document.getElementById('stu-stats');
+  if(statEl){
+    const total=db.students.length;
+    const byClass=['Class 5','Class 6','Class 7','Class 8','Class 9','Class 10'];
+    const classCount=byClass.filter(c=>db.students.find(s=>s.cls===c)).length;
+    const males=db.students.filter(s=>s.gender==='Male').length;
+    const females=db.students.filter(s=>s.gender==='Female').length;
+    statEl.innerHTML=`
+      <div class="stu-stat-card"><div class="stu-stat-icon blue">👥</div><div><div class="stu-stat-num">${total}</div><div class="stu-stat-label">Total Students</div></div></div>
+      <div class="stu-stat-card"><div class="stu-stat-icon gold">📚</div><div><div class="stu-stat-num">${classCount}</div><div class="stu-stat-label">Classes Active</div></div></div>
+      <div class="stu-stat-card"><div class="stu-stat-icon green">👦</div><div><div class="stu-stat-num">${males}</div><div class="stu-stat-label">Male Students</div></div></div>
+      <div class="stu-stat-card"><div class="stu-stat-icon purple">👧</div><div><div class="stu-stat-num">${females}</div><div class="stu-stat-label">Female Students</div></div></div>`;
+  }
+
+  const tb=document.getElementById('students-tbody');
+  const mob=document.getElementById('students-mob');
+
+  if(!list.length){
+    const empty=`<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-title">No students found</div><div class="empty-text">Try a different search, or add a new student.</div><button class="btn btn-primary" style="margin-top:12px" onclick="openStudentModal()">＋ Add Student</button></div>`;
+    if(tb) tb.innerHTML=`<tr><td colspan="8">${empty}</td></tr>`;
+    if(mob) mob.innerHTML=empty;
+    return;
+  }
+
+  if(tb) tb.innerHTML=list.map((s,i)=>{
+    const date=s.createdAt?new Date(s.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}):'—';
+    return `<tr>
+      <td class="fs-12 text-muted fw-bold">${i+1}</td>
+      <td><div style="display:flex;align-items:center;gap:10px">
+        <div class="avatar">${s.name.charAt(0).toUpperCase()}</div>
+        <div><div class="fw-bold">${esc(s.name)}</div><div class="fs-11 text-muted">${s.dob?'DOB: '+s.dob:''}</div></div>
+      </div></td>
+      <td><span class="badge badge-navy">${s.cls}</span></td>
+      <td class="fs-12">${s.gender||'—'}</td>
+      <td class="fs-13">${esc(s.father)||'—'}</td>
+      <td class="fs-13">${s.phone||'—'}</td>
+      <td class="fs-12 text-muted">${date}</td>
+      <td><div style="display:flex;gap:5px">
+        <button class="btn btn-outline btn-sm" onclick="viewStudentProfile('${s.id}')">View</button>
+        <button class="btn btn-outline btn-sm" onclick="openStudentModal('${s.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.id}')">✕</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+
+  if(mob) mob.innerHTML=list.map((s,i)=>{
+    const date=s.createdAt?new Date(s.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'—';
+    return `<div class="mob-card">
+      <div class="mob-card-top">
+        <div class="mob-card-user">
+          <div class="avatar">${s.name.charAt(0).toUpperCase()}</div>
+          <div><div class="mob-card-name">${esc(s.name)}</div><div class="mob-card-sub">${s.cls}${s.gender?' · '+s.gender:''}</div></div>
+        </div>
+        <span class="badge badge-navy" style="font-size:10px">#${i+1}</span>
+      </div>
+      <div class="mob-card-grid">
+        <div class="mob-card-cell"><div class="mob-card-cell-label">Father's Name</div><div class="mob-card-cell-val">${esc(s.father)||'—'}</div></div>
+        <div class="mob-card-cell"><div class="mob-card-cell-label">Contact</div><div class="mob-card-cell-val">${s.phone||'—'}</div></div>
+        <div class="mob-card-cell"><div class="mob-card-cell-label">Date of Birth</div><div class="mob-card-cell-val">${s.dob||'—'}</div></div>
+        <div class="mob-card-cell"><div class="mob-card-cell-label">Enrolled</div><div class="mob-card-cell-val">${date}</div></div>
+      </div>
+      <div class="mob-card-actions">
+        <button class="btn btn-outline btn-sm" onclick="viewStudentProfile('${s.id}')">View Profile</button>
+        <button class="btn btn-navy btn-sm" onclick="openStudentModal('${s.id}')">Edit</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteStudent('${s.id}')">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════
+// STUDENT PROFILE MODAL
+// ═══════════════════════════════════════════════════
+function viewStudentProfile(sid){
+  const s=db.students.find(x=>x.id===sid); if(!s) return;
+  const date=s.createdAt?new Date(s.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}):'—';
+  const chips=[];
+  if(s.cls) chips.push(s.cls);
+  if(s.gender) chips.push(s.gender);
+  if(s.dob) chips.push('DOB: '+s.dob);
+  document.getElementById('detail-body').innerHTML=`
+    <div class="profile-header">
+      <div class="profile-avatar">${s.name.charAt(0).toUpperCase()}</div>
+      <div style="flex:1;min-width:0">
+        <div class="profile-name">${esc(s.name)}</div>
+        <div class="profile-sub">${chips.join(' &nbsp;·&nbsp; ')}</div>
+      </div>
+      <button class="profile-close-btn" onclick="closeModal('detail-modal')" title="Close">✕</button>
+    </div>
+    <div class="profile-body">
+      <div class="profile-section">Personal Information</div>
+      <div class="profile-grid">
+        <div class="profile-field"><div class="profile-field-label">Full Name</div><div class="profile-field-val">${esc(s.name)}</div></div>
+        <div class="profile-field"><div class="profile-field-label">Date of Birth</div><div class="profile-field-val">${s.dob||'—'}</div></div>
+        <div class="profile-field"><div class="profile-field-label">Gender</div><div class="profile-field-val">${s.gender||'—'}</div></div>
+        <div class="profile-field"><div class="profile-field-label">Class</div><div class="profile-field-val">${s.cls}</div></div>
+      </div>
+      <div class="profile-section">Family Details</div>
+      <div class="profile-grid">
+        <div class="profile-field"><div class="profile-field-label">Father's Name</div><div class="profile-field-val">${esc(s.father)||'—'}</div></div>
+        <div class="profile-field"><div class="profile-field-label">Mother's Name</div><div class="profile-field-val">${esc(s.mother)||'—'}</div></div>
+        <div class="profile-field"><div class="profile-field-label">Contact Number</div><div class="profile-field-val">${s.phone?`<a href="tel:${s.phone}" style="color:var(--info);text-decoration:none">${s.phone}</a>`:'—'}</div></div>
+        <div class="profile-field"><div class="profile-field-label">Enrolled On</div><div class="profile-field-val">${date}</div></div>
+        ${s.address?`<div class="profile-field full"><div class="profile-field-label">Address</div><div class="profile-field-val">${esc(s.address)}</div></div>`:''}
+        ${s.notes?`<div class="profile-field full"><div class="profile-field-label">Notes / Remarks</div><div class="profile-field-val">${esc(s.notes)}</div></div>`:''}
+      </div>
+      <div class="profile-actions">
+        <button class="btn btn-primary" onclick="closeModal('detail-modal');openStudentModal('${sid}')">✏ Edit Profile</button>
+        ${s.phone?`<button class="btn btn-whatsapp" onclick="sendWhatsApp('${sid}')">💬 WhatsApp</button>`:''}
+        <button class="btn btn-outline" onclick="closeModal('detail-modal')">Close</button>
+      </div>
+    </div>`;
+  openModal('detail-modal');
+}
+
+// ═══════════════════════════════════════════════════
+// PAYMENT CRUD
+// ═══════════════════════════════════════════════════
+function populateStudentSelect(){
+  const sel=document.getElementById('pf-student');
+  sel.innerHTML='<option value="">Select Student</option>'+
+    db.students.map(s=>`<option value="${s.id}">${esc(s.name)} (${s.cls})</option>`).join('');
+}
+
+function openPaymentModal(){
+  document.getElementById('payment-alert').innerHTML='';
+  populateStudentSelect();
+  document.getElementById('pf-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('pf-amount').value='';
+  document.getElementById('pf-month').value='';
+  document.getElementById('pf-remarks').value='';
+  document.getElementById('pf-receipt').value='';
+  document.getElementById('pf-student').value='';
+  document.getElementById('pf-fee-display').style.display='none';
+  openModal('payment-modal');
+}
+
+function openPaymentFor(sid){
+  openPaymentModal();
+  document.getElementById('pf-student').value=sid;
+  onStudentSelect();
+}
+
+function onStudentSelect(){
+  const sid=document.getElementById('pf-student').value;
+  const fd=document.getElementById('pf-fee-display');
+  if(sid){
+    const s=db.students.find(x=>x.id===sid);
+    if(s){
+      document.getElementById('pf-fee-show').textContent='₹'+s.fee.toLocaleString('en-IN');
+      document.getElementById('pf-amount').value=s.fee;
+      fd.style.display='flex';
+    }
+  } else fd.style.display='none';
+}
+
+async function savePayment(){
+  const sid=document.getElementById('pf-student').value;
+  const month=document.getElementById('pf-month').value;
+  const amount=parseFloat(document.getElementById('pf-amount').value)||0;
+  const mode=document.getElementById('pf-mode').value;
+  const date=document.getElementById('pf-date').value;
+  if(!sid){ showInlineAlert('payment-alert','Please select a student','error'); return; }
+  if(!month){ showInlineAlert('payment-alert','Please select a month','error'); return; }
+  if(!amount){ showInlineAlert('payment-alert','Amount is required','error'); return; }
+  const receiptNo=document.getElementById('pf-receipt').value.trim()||genReceipt();
+  const pay={
+    id:genId(),studentId:sid,month,amount,mode,date,receiptNo,
+    remarks:document.getElementById('pf-remarks').value.trim(),
+    createdAt:new Date().toISOString()
+  };
+  try {
+    await window.fb.addDoc(window.fb.collection(window.firestore,"payments"),pay);
+  } catch(err){
+    console.error(err);
+    alert("Error: "+err.message);
+    return;
+  }
+  closeModal('payment-modal');
+  toast('Payment recorded!');
+  updateBadge();
+  showReceipt(pay.id);
+  if(currentPage==='billing') renderBilling();
+  if(currentPage==='dashboard') renderDashboard();
+}
+
+function deletePayment(pid){
+  const pay = db.payments.find(p=>p.id===pid);
+  if(!pay){ toast('Payment record not found', 'error'); return; }
+  const s = db.students.find(x=>x.id===pay.studentId);
+  const studentName = s ? s.name : 'Unknown Student';
+  const amtStr = pay.amount ? '₹' + pay.amount.toLocaleString('en-IN') : '';
+  showConfirm({
+    title: 'Delete Payment',
+    text: 'Delete payment of ' + amtStr + ' for ' + studentName + ' (' + (pay.month||'') + ')? This cannot be undone.',
+    icon: '🧾',
+    okLabel: 'Delete Payment',
+    okClass: 'btn-danger',
+    onOk: async () => {
+      try {
+        await window.fb.deleteDoc(window.fb.doc(window.firestore, "payments", pay.id));
+        toast('Payment deleted', 'info');
+        updateBadge();
+        if(currentPage==='billing') renderBilling();
+        if(currentPage==='dashboard') renderDashboard();
+      } catch(err) {
+        console.error('Delete payment error:', err);
+        toast('Error deleting payment: ' + err.message, 'error');
+      }
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// RECEIPT
+// ═══════════════════════════════════════════════════
+function showReceipt(pid){
+  const pay=db.payments.find(p=>p.id===pid); if(!pay) return;
+  const s=db.students.find(x=>x.id===pay.studentId); if(!s) return;
+  const bal=s.fee-pay.amount;
+  const status=bal<=0?'Paid':pay.amount>0?'Partial':'Unpaid';
+  document.getElementById('receipt-body').innerHTML=`
+    <div class="receipt">
+      <div class="receipt-header">
+        <div class="receipt-logo-text">Mission For Excellence</div>
+        <div class="receipt-sub">TUTORIALS · SAGARA</div>
+        <div class="receipt-badge">PAYMENT RECEIPT</div>
+      </div>
+      <div class="receipt-body">
+        <div class="receipt-row"><span class="receipt-label">Receipt No.</span><span class="receipt-val">${pay.receiptNo}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Date</span><span class="receipt-val">${pay.date}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Student Name</span><span class="receipt-val">${esc(s.name)}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Class</span><span class="receipt-val">${s.cls}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Month</span><span class="receipt-val">${pay.month}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Monthly Fee</span><span class="receipt-val">₹${s.fee.toLocaleString('en-IN')}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Amount Paid</span><span class="receipt-val text-success">₹${pay.amount.toLocaleString('en-IN')}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Balance</span><span class="receipt-val ${bal>0?'text-danger':'text-success'}">${bal>0?'₹'+bal.toLocaleString('en-IN'):'Nil'}</span></div>
+        <div class="receipt-row"><span class="receipt-label">Mode</span><span class="receipt-val">${pay.mode}</span></div>
+        ${pay.remarks?`<div class="receipt-row"><span class="receipt-label">Remarks</span><span class="receipt-val">${esc(pay.remarks)}</span></div>`:''}
+        <div class="receipt-total-row">
+          <span class="fw-bold">Status</span>
+          <span>${badgeHtml(status)}</span>
+        </div>
+        <div style="text-align:center;margin-top:8px">
+          ${status==='Paid'?'<div class="receipt-stamp">PAID IN FULL</div>':''}
+        </div>
+      </div>
+      <div class="receipt-footer">
+        Bangarappa Circle, Near Kagodu Rangamandira<br>
+        Sagara – 577401, Karnataka<br>
+        📞 +91 98446 58158
+      </div>
+    </div>`;
+  openModal('receipt-modal');
+}
+
+// ═══════════════════════════════════════════════════
+// BILLING PAGE
+// ═══════════════════════════════════════════════════
+function populateBillingMonths(){
+  const months=[...new Set(db.payments.map(p=>p.month))].sort();
+  const sel=document.getElementById('b-month');
+  const cur=sel?sel.value:'';
+  if(sel) sel.innerHTML='<option value="">All Months</option>'+months.map(m=>`<option${m===cur?' selected':''}>${m}</option>`).join('');
+}
+
+function renderBilling(){
+  const search=(document.getElementById('b-search')||{}).value||'';
+  const month=(document.getElementById('b-month')||{}).value||'';
+  const status=(document.getElementById('b-status')||{}).value||'';
+  const cls=(document.getElementById('b-class')||{}).value||'';
+
+  const bm=document.getElementById('billing-metrics');
+  if(bm){
+    const totalCollected=db.payments.reduce((a,p)=>a+p.amount,0);
+    const paidCount=db.students.filter(s=>getStudentStatus(s.id)==='Paid').length;
+    const unpaidCount=db.students.filter(s=>getStudentStatus(s.id)==='Unpaid').length;
+    const partialCount=db.students.filter(s=>getStudentStatus(s.id)==='Partial').length;
+    bm.innerHTML=`
+      <div class="metric-card mc-blue"><div class="metric-icon">💰</div><div class="metric-label">Total Collected</div><div class="metric-value">₹${totalCollected.toLocaleString('en-IN')}</div><div class="metric-sub">All time</div></div>
+      <div class="metric-card mc-green"><div class="metric-icon">✅</div><div class="metric-label">Fully Paid</div><div class="metric-value">${paidCount}</div><div class="metric-sub">Students</div></div>
+      <div class="metric-card mc-red"><div class="metric-icon">⏳</div><div class="metric-label">Unpaid</div><div class="metric-value">${unpaidCount}</div><div class="metric-sub">Students</div></div>
+      <div class="metric-card mc-gold"><div class="metric-icon">◑</div><div class="metric-label">Partial</div><div class="metric-value">${partialCount}</div><div class="metric-sub">Students</div></div>`;
+  }
+
+  let rows=[];
+  db.students.forEach(s=>{
+    const pays=db.payments.filter(p=>p.studentId===s.id);
+    if(!pays.length){
+      rows.push({s,pay:null,month:'—',status:'Unpaid'});
+    } else {
+      pays.forEach(p=>{
+        const bal=s.fee-p.amount;
+        rows.push({s,pay:p,month:p.month,status:bal<=0?'Paid':p.amount>0?'Partial':'Unpaid'});
+      });
+    }
+  });
+
+  if(search) rows=rows.filter(r=>r.s.name.toLowerCase().includes(search.toLowerCase())||(r.s.cls||'').toLowerCase().includes(search.toLowerCase()));
+  if(month) rows=rows.filter(r=>r.month===month);
+  if(status) rows=rows.filter(r=>r.status===status);
+  if(cls) rows=rows.filter(r=>r.s.cls===cls);
+
+  const tb=document.getElementById('billing-tbody');
+  const mob=document.getElementById('billing-mob');
+
+  if(!rows.length){
+    const empty=`<div class="empty-state"><div class="empty-icon">💳</div><div class="empty-title">No records found</div><div class="empty-text">Record a payment to see it here.</div><button class="btn btn-primary" style="margin-top:12px" onclick="openPaymentModal()">＋ Record Payment</button></div>`;
+    if(tb) tb.innerHTML=`<tr><td colspan="11">${empty}</td></tr>`;
+    if(mob) mob.innerHTML=empty;
+    return;
+  }
+
+  if(tb) tb.innerHTML=rows.map((r,i)=>{
+    const paid=r.pay?r.pay.amount:0;
+    const bal=r.s.fee-paid;
+    return `<tr>
+      <td class="fs-12 text-muted fw-bold">${i+1}</td>
+      <td><div style="display:flex;align-items:center;gap:8px">
+        <div class="avatar" style="width:28px;height:28px;font-size:11px">${r.s.name.charAt(0)}</div>
+        <div><div class="fw-bold fs-13">${esc(r.s.name)}</div><div class="fs-11 text-muted">${r.pay?r.pay.receiptNo:''}</div></div>
+      </div></td>
+      <td><span class="badge badge-navy">${r.s.cls}</span></td>
+      <td class="fs-12">${r.month}</td>
+      <td class="fw-bold">₹${r.s.fee.toLocaleString('en-IN')}</td>
+      <td class="fw-bold text-success">${paid?'₹'+paid.toLocaleString('en-IN'):'—'}</td>
+      <td class="fw-bold ${bal>0?'text-danger':'text-success'}">${bal>0?'₹'+bal.toLocaleString('en-IN'):'✓ Nil'}</td>
+      <td class="fs-12 text-muted">${r.pay?r.pay.mode:'—'}</td>
+      <td class="fs-12 text-muted">${r.pay?r.pay.date:'—'}</td>
+      <td>${badgeHtml(r.status)}</td>
+      <td><div style="display:flex;gap:4px;flex-wrap:wrap">
+        ${r.pay?`<button class="btn btn-outline btn-sm" onclick="showReceipt('${r.pay.id}')">Receipt</button>`:''}
+        <button class="btn btn-primary btn-sm" onclick="openPaymentFor('${r.s.id}')">Pay</button>
+        ${r.pay?`<button class="btn btn-ghost btn-sm" title="Delete payment" onclick="deletePayment('${r.pay.id}')">✕</button>`:''}
+      </div></td>
+    </tr>`;
+  }).join('');
+
+  if(mob) mob.innerHTML=rows.map(r=>{
+    const paid=r.pay?r.pay.amount:0;
+    const bal=r.s.fee-paid;
+    return `<div class="mob-card">
+      <div class="mob-card-top">
+        <div class="mob-card-user">
+          <div class="avatar">${r.s.name.charAt(0)}</div>
+          <div><div class="mob-card-name">${esc(r.s.name)}</div><div class="mob-card-sub">${r.s.cls} · ${r.month}</div></div>
+        </div>
+        ${badgeHtml(r.status)}
+      </div>
+      <div class="mob-card-grid">
+        <div class="mob-card-cell"><div class="mob-card-cell-label">Monthly Fee</div><div class="mob-card-cell-val">₹${r.s.fee.toLocaleString('en-IN')}</div></div>
+        <div class="mob-card-cell"><div class="mob-card-cell-label">Amount Paid</div><div class="mob-card-cell-val text-success">${paid?'₹'+paid.toLocaleString('en-IN'):'—'}</div></div>
+        <div class="mob-card-cell"><div class="mob-card-cell-label">Balance</div><div class="mob-card-cell-val ${bal>0?'text-danger':'text-success'}">${bal>0?'₹'+bal.toLocaleString('en-IN'):'Nil'}</div></div>
+        <div class="mob-card-cell"><div class="mob-card-cell-label">Mode · Date</div><div class="mob-card-cell-val">${r.pay?r.pay.mode+' · '+r.pay.date:'—'}</div></div>
+      </div>
+      ${r.pay?`<div style="font-size:11px;color:var(--muted);padding:4px 0 8px">🧾 ${r.pay.receiptNo}</div>`:''}
+      <div class="mob-card-actions">
+        ${r.pay?`<button class="btn btn-outline btn-sm" onclick="showReceipt('${r.pay.id}')">Receipt</button>`:''}
+        <button class="btn btn-primary btn-sm" onclick="openPaymentFor('${r.s.id}')">Pay</button>
+        ${r.pay?`<button class="btn btn-danger btn-sm" onclick="deletePayment('${r.pay.id}')">✕</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════
+function renderDashboard(){
+  const total=db.students.length;
+  const collected=db.payments.reduce((a,p)=>a+p.amount,0);
+  const monthFee=db.students.reduce((a,s)=>a+s.fee,0);
+  const unpaidCount=db.students.filter(s=>getStudentStatus(s.id)!=='Paid').length;
+
+  document.getElementById('dash-metrics').innerHTML=`
+    <div class="metric-card mc-green">
+      <div class="metric-icon">👥</div>
+      <div class="metric-label">Total Students</div>
+      <div class="metric-value">${total}</div>
+      <div class="metric-sub">Currently enrolled</div>
+    </div>
+    <div class="metric-card mc-gold">
+      <div class="metric-icon">📅</div>
+      <div class="metric-label">Monthly Revenue Target</div>
+      <div class="metric-value">₹${monthFee.toLocaleString('en-IN')}</div>
+      <div class="metric-sub">If all students pay</div>
+    </div>
+    <div class="metric-card mc-blue">
+      <div class="metric-icon">💰</div>
+      <div class="metric-label">Total Collected</div>
+      <div class="metric-value">₹${collected.toLocaleString('en-IN')}</div>
+      <div class="metric-sub">All time</div>
+    </div>
+    <div class="metric-card mc-red">
+      <div class="metric-icon">⚠</div>
+      <div class="metric-label">Pending Students</div>
+      <div class="metric-value">${unpaidCount}</div>
+      <div class="metric-sub">Need follow-up</div>
+    </div>`;
+
+  const recent=[...db.payments].sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,6);
+  const recEl=document.getElementById('dash-recent');
+  recEl.innerHTML=recent.length?recent.map(p=>{
+    const s=db.students.find(x=>x.id===p.studentId);
+    return `<div class="pay-row">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="avatar" style="width:30px;height:30px;font-size:11px">${s?s.name.charAt(0):'?'}</div>
+        <div><div class="fw-bold fs-13">${s?esc(s.name):'Unknown'}</div><div class="fs-11 text-muted">${p.month} · ${p.mode}</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="fw-bold text-success">₹${p.amount.toLocaleString('en-IN')}</span>
+        <button class="btn btn-ghost btn-sm" onclick="showReceipt('${p.id}')">🧾</button>
+      </div>
+    </div>`;}).join('')
+    :`<div class="empty-state" style="padding:30px"><div class="empty-text">No payments recorded yet</div></div>`;
+
+  const pending=db.students.filter(s=>getStudentStatus(s.id)!=='Paid').slice(0,6);
+  const penEl=document.getElementById('dash-pending');
+  penEl.innerHTML=pending.length?pending.map(s=>`
+    <div class="pay-row">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="avatar" style="width:30px;height:30px;font-size:11px">${s.name.charAt(0)}</div>
+        <div><div class="fw-bold fs-13">${esc(s.name)}</div><div class="fs-11 text-muted">${s.cls}</div></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px">
+        ${badgeHtml(getStudentStatus(s.id))}
+        <button class="btn btn-primary btn-sm" onclick="openPaymentFor('${s.id}')">Pay</button>
+      </div>
+    </div>`).join('')
+    :`<div class="empty-state" style="padding:30px"><div class="empty-icon">🎉</div><div class="empty-text">All students are paid up!</div></div>`;
+}
+
+// ═══════════════════════════════════════════════════
+// REPORTS
+// ═══════════════════════════════════════════════════
+function renderReports(){
+  const collected=db.payments.reduce((a,p)=>a+p.amount,0);
+  const today=new Date().toISOString().slice(0,7);
+  const thisM=db.payments.filter(p=>p.date&&p.date.startsWith(today)).reduce((a,p)=>a+p.amount,0);
+  const pending=db.students.filter(s=>getStudentStatus(s.id)!=='Paid').reduce((a,s)=>a+s.fee,0);
+
+  document.getElementById('report-metrics').innerHTML=`
+    <div class="metric-card mc-blue"><div class="metric-label">Total Collected</div><div class="metric-value">₹${collected.toLocaleString('en-IN')}</div></div>
+    <div class="metric-card mc-green"><div class="metric-label">This Month</div><div class="metric-value">₹${thisM.toLocaleString('en-IN')}</div></div>
+    <div class="metric-card mc-red"><div class="metric-label">Pending Dues</div><div class="metric-value">₹${pending.toLocaleString('en-IN')}</div></div>
+    <div class="metric-card mc-gold"><div class="metric-label">Total Transactions</div><div class="metric-value">${db.payments.length}</div></div>`;
+
+  const classes=['Class 5','Class 6','Class 7','Class 8','Class 9','Class 10'];
+  const clsData=classes.map(c=>{
+    const sts=db.students.filter(s=>s.cls===c);
+    const col=db.payments.filter(p=>sts.find(s=>s.id===p.studentId)).reduce((a,p)=>a+p.amount,0);
+    return{c,count:sts.length,col};
+  }).filter(x=>x.count>0);
+  const maxC=Math.max(...clsData.map(d=>d.col),1);
+  document.getElementById('rpt-class').innerHTML=clsData.length?clsData.map(x=>`
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+        <span class="fw-bold">${x.c} <span class="text-muted">(${x.count} students)</span></span>
+        <span class="text-success fw-bold">₹${x.col.toLocaleString('en-IN')}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${Math.round(x.col/maxC*100)}%;background:linear-gradient(90deg,var(--gold),var(--gold-light))"></div></div>
+    </div>`).join('')
+    :`<div class="empty-state" style="padding:20px"><div class="empty-text">No data yet</div></div>`;
+
+  const monthMap={};
+  db.payments.forEach(p=>{monthMap[p.month]=(monthMap[p.month]||0)+p.amount;});
+  const months=Object.entries(monthMap).sort((a,b)=>a[0].localeCompare(b[0]));
+  const maxM=Math.max(...months.map(m=>m[1]),1);
+  document.getElementById('rpt-monthly').innerHTML=months.length?months.map(([m,v])=>`
+    <div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+        <span class="fw-bold">${m}</span><span class="text-success fw-bold">₹${v.toLocaleString('en-IN')}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${Math.round(v/maxM*100)}%;background:linear-gradient(90deg,var(--navy),var(--navy-mid))"></div></div>
+    </div>`).join('')
+    :`<div class="empty-state" style="padding:20px"><div class="empty-text">No data yet</div></div>`;
+
+  const modeMap={};
+  db.payments.forEach(p=>{modeMap[p.mode]=(modeMap[p.mode]||0)+p.amount;});
+  const total=Object.values(modeMap).reduce((a,v)=>a+v,0)||1;
+  const colors={'Cash':'#c9a84c','UPI':'#2563eb','Bank Transfer':'#16a34a','Cheque':'#d97706'};
+  document.getElementById('rpt-mode').innerHTML=Object.entries(modeMap).length?Object.entries(modeMap).map(([m,v])=>`
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <div style="width:10px;height:10px;border-radius:50%;background:${colors[m]||'#888'};flex-shrink:0"></div>
+      <div style="flex:1;font-size:13px">${m}</div>
+      <div class="fw-bold fs-13">₹${v.toLocaleString('en-IN')}</div>
+      <div class="text-muted fs-12">${Math.round(v/total*100)}%</div>
+    </div>`).join('')
+    :`<div class="empty-state" style="padding:20px"><div class="empty-text">No data yet</div></div>`;
+
+  document.getElementById('rpt-rate').innerHTML=clsData.length?clsData.map(x=>{
+    const sts=db.students.filter(s=>s.cls===x.c);
+    const paid=sts.filter(s=>getStudentStatus(s.id)==='Paid').length;
+    const rate=sts.length?Math.round(paid/sts.length*100):0;
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+        <span class="fw-bold">${x.c}</span>
+        <span>${paid}/${sts.length} paid · <span class="${rate>=75?'text-success':'text-danger'} fw-bold">${rate}%</span></span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${rate}%;background:${rate>=75?'var(--success)':rate>=50?'var(--warning)':'var(--danger)'}"></div></div>
+    </div>`;}).join('')
+    :`<div class="empty-state" style="padding:20px"><div class="empty-text">No data yet</div></div>`;
+}
+
+// ═══════════════════════════════════════════════════
+// REMINDERS
+// ═══════════════════════════════════════════════════
+function renderReminders(){
+  const pending=db.students.filter(s=>getStudentStatus(s.id)!=='Paid');
+  const el=document.getElementById('reminder-list');
+  if(!pending.length){
+    el.innerHTML=`<div class="empty-state"><div class="empty-icon">🎉</div><div class="empty-title">All Clear!</div><div class="empty-text">No pending payments — all students are paid up. Great job!</div></div>`;
+    return;
+  }
+  const noPhone=pending.filter(s=>!s.phone);
+  let html='';
+  if(noPhone.length>0){
+    html+=`<div style="background:var(--warning-bg);border:1px solid #fde68a;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--warning)">
+      ⚠ <strong>${noPhone.length} student${noPhone.length>1?'s':''}</strong> do not have a contact number saved and cannot receive WhatsApp reminders.
+    </div>`;
+  }
+  html+=`<div class="tbl-wrap"><table><thead><tr>
+    <th>Student</th><th>Class</th><th>Contact</th><th>Monthly Fee</th><th>Status</th><th>Action</th>
+  </tr></thead><tbody>`+
+    pending.map(s=>`<tr>
+      <td><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="width:28px;height:28px;font-size:11px">${s.name.charAt(0)}</div><span class="fw-bold fs-13">${esc(s.name)}</span></div></td>
+      <td>${s.cls}</td>
+      <td>${s.phone||'<span class="text-muted fs-12">No number</span>'}</td>
+      <td class="fw-bold text-gold">₹${s.fee.toLocaleString('en-IN')}</td>
+      <td>${badgeHtml(getStudentStatus(s.id))}</td>
+      <td>${s.phone?`<button class="btn btn-whatsapp btn-sm" onclick="sendWhatsApp('${s.id}')">💬 Send</button>`:'<span class="text-muted fs-12">—</span>'}</td>
+    </tr>`).join('')+`</tbody></table></div>`;
+  html+=`<div class="mob-cards-container" style="margin-top:12px">`+
+    pending.map(s=>`<div class="mob-card">
+      <div class="mob-card-top">
+        <div class="mob-card-user">
+          <div class="avatar">${s.name.charAt(0)}</div>
+          <div><div class="mob-card-name">${esc(s.name)}</div><div class="mob-card-sub">${s.cls}</div></div>
+        </div>
+        ${badgeHtml(getStudentStatus(s.id))}
+      </div>
+      <div class="mob-card-grid">
+        <div class="mob-card-cell"><div class="mob-card-cell-label">Monthly Fee</div><div class="mob-card-cell-val">₹${s.fee.toLocaleString('en-IN')}</div></div>
+        <div class="mob-card-cell"><div class="mob-card-cell-label">Contact</div><div class="mob-card-cell-val">${s.phone||'—'}</div></div>
+      </div>
+      <div class="mob-card-actions">
+        ${s.phone?`<button class="btn btn-whatsapp btn-sm" style="flex:1;justify-content:center" onclick="sendWhatsApp('${s.id}')">💬 WhatsApp</button>`:'<span class="text-muted fs-12">No contact number</span>'}
+      </div>
+    </div>`).join('')+`</div>`;
+  el.innerHTML=html;
+}
+
+function buildMsg(sid){
+  const s=db.students.find(x=>x.id===sid); if(!s) return '';
+  const tmpl=document.getElementById('reminder-template').value;
+  const latest=getLatestPay(sid);
+  return tmpl
+    .replace(/{name}/g,s.name)
+    .replace(/{class}/g,s.cls)
+    .replace(/{amount}/g,s.fee.toLocaleString('en-IN'))
+    .replace(/{month}/g,latest?latest.month:'current month');
+}
+
+function sendWhatsApp(sid){
+  const s=db.students.find(x=>x.id===sid); if(!s||!s.phone) return;
+  const msg=encodeURIComponent(buildMsg(sid));
+  window.open(`https://wa.me/91${s.phone}?text=${msg}`,'_blank');
+}
+
+function sendAllReminders(){
+  const pending=db.students.filter(s=>getStudentStatus(s.id)!=='Paid');
+  if(!pending.length){ toast('All students are paid — no reminders needed! 🎉','info'); return; }
+  const withPhone=pending.filter(s=>s.phone);
+  if(!withPhone.length){ toast('No students have contact numbers saved','info'); return; }
+  showConfirm({
+    title: 'Send All Reminders',
+    text: `Send WhatsApp reminders to ${withPhone.length} student${withPhone.length>1?'s':''}?`,
+    icon: '💬',
+    iconClass: '',
+    okLabel: 'Send Reminders',
+    okClass: 'btn-whatsapp',
+    onOk: () => {
+      withPhone.forEach((s,i)=>{
+        setTimeout(()=>{
+          const msg=encodeURIComponent(buildMsg(s.id));
+          window.open(`https://wa.me/91${s.phone}?text=${msg}`,'_blank');
+        },i*800);
+      });
+      toast(`Sending reminders to ${withPhone.length} students...`,'info');
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// EXPORT TO EXCEL
+// ═══════════════════════════════════════════════════
+function populateExportMonths(){
+  const months=[...new Set(db.payments.map(p=>p.month))].sort();
+  const sel=document.getElementById('exp-month');
+  if(sel) sel.innerHTML='<option value="">All Months</option>'+months.map(m=>`<option>${m}</option>`).join('');
+}
+
+function exportStudents(){
+  const cls=document.getElementById('exp-class').value;
+  let list=cls?db.students.filter(s=>s.cls===cls):[...db.students];
+  const rows=list.map(s=>({
+    'Name':s.name,'Class':s.cls,'DOB':s.dob||'','Gender':s.gender||'',
+    "Father's Name":s.father||'',"Mother's Name":s.mother||'',
+    'Phone':s.phone||'','Monthly Fee (₹)':s.fee,'Address':s.address||'',
+    'Status':getStudentStatus(s.id),'Total Paid (₹)':getTotalPaid(s.id),
+    'Enrolled':s.createdAt?new Date(s.createdAt).toLocaleDateString('en-IN'):''
+  }));
+  downloadExcel([{name:'Students',data:rows}],'MFE_Students');
+  toast('Students exported!');
+}
+
+function exportPayments(){
+  const month=document.getElementById('exp-month').value;
+  let list=month?db.payments.filter(p=>p.month===month):[...db.payments];
+  const rows=list.map(p=>{
+    const s=db.students.find(x=>x.id===p.studentId);
+    return{'Receipt No.':p.receiptNo,'Student':s?s.name:'Unknown','Class':s?s.cls:'','Month':p.month,'Amount Paid (₹)':p.amount,'Balance (₹)':s?Math.max(s.fee-p.amount,0):'','Mode':p.mode,'Date':p.date,'Remarks':p.remarks||''};
+  });
+  downloadExcel([{name:'Payments',data:rows}],'MFE_Payments');
+  toast('Payments exported!');
+}
+
+function exportPending(){
+  const list=db.students.filter(s=>getStudentStatus(s.id)!=='Paid');
+  const rows=list.map(s=>({'Name':s.name,'Class':s.cls,'Phone':s.phone||'','Monthly Fee (₹)':s.fee,'Status':getStudentStatus(s.id),'Total Paid (₹)':getTotalPaid(s.id),'Balance (₹)':s.fee-getTotalPaid(s.id)}));
+  downloadExcel([{name:'Pending Fees',data:rows}],'MFE_Pending_Fees');
+  toast('Pending fees exported!');
+}
+
+function exportFull(){
+  const studRows=db.students.map(s=>({'Name':s.name,'Class':s.cls,'Phone':s.phone||'','Monthly Fee':s.fee,'Status':getStudentStatus(s.id),'Total Paid':getTotalPaid(s.id)}));
+  const payRows=db.payments.map(p=>{const s=db.students.find(x=>x.id===p.studentId);return{'Receipt':p.receiptNo,'Student':s?s.name:'','Class':s?s.cls:'','Month':p.month,'Amount':p.amount,'Mode':p.mode,'Date':p.date};});
+  downloadExcel([{name:'Students',data:studRows},{name:'Payments',data:payRows}],'MFE_Full_Report');
+  toast('Full report exported!');
+}
+
+function downloadExcel(sheets, filename){
+  const wb=XLSX.utils.book_new();
+  sheets.forEach(sh=>{const ws=XLSX.utils.json_to_sheet(sh.data);XLSX.utils.book_append_sheet(wb,ws,sh.name);});
+  XLSX.writeFile(wb,filename+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+// ═══════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════
+function badgeHtml(s){
+  const cls=s==='Paid'?'badge-paid':s==='Partial'?'badge-partial':'badge-unpaid';
+  const dot=s==='Paid'?'●':s==='Partial'?'◑':'○';
+  return `<span class="badge ${cls}">${dot} ${s}</span>`;
+}
+
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function updateBadge(){
+  const n=db.students.filter(s=>getStudentStatus(s.id)!=='Paid').length;
+  const el=document.getElementById('unpaid-badge');
+  if(el){
+    el.textContent=n;
+    if(n > 0){ el.classList.add('visible'); } else { el.classList.remove('visible'); }
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+async function init(){
+  document.getElementById('topbar-date').textContent=
+    new Date().toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+
+  function applyResponsive(){
+    const isMob = window.innerWidth <= 1261;
+    document.querySelectorAll('.tbl-wrap').forEach(el=>{ el.style.display = isMob ? 'none' : 'block'; });
+    document.querySelectorAll('.mob-cards-container').forEach(el=>{ el.style.display = isMob ? 'block' : 'none'; });
+  }
+  applyResponsive();
+  window.addEventListener('resize', applyResponsive);
+
+  await loadDB();
+  renderDashboard();
+  updateBadge();
+
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){
+      document.querySelectorAll('.modal-overlay:not(.hidden)').forEach(m=>m.classList.add('hidden'));
+      closeLogoutModal();
+      closeConfirmModal();
+      CSD.closeAll();
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// PREMIUM CUSTOM SELECT DROPDOWN (CSD) ENGINE
+// Replaces ALL native <select> elements site-wide.
+// Works identically in every browser & screen size.
+// ═══════════════════════════════════════════════════
+const CSD = (function(){
+  let activePanel = null;
+  const instances = new Map(); // selectEl → instance data
+
+  // Status option dot colors
+  const dotMap = {
+    'Paid':'green','Unpaid':'red','Partial':'yellow',
+    'All Status':'','All Months':'','All Classes':'',
+    'Cash':'blue','UPI':'blue','Bank Transfer':'blue','Cheque':'blue'
+  };
+
+  function getDot(label){
+    const k = Object.keys(dotMap).find(k => label.startsWith(k));
+    if(!k || !dotMap[k]) return '';
+    return `<span class="csd-dot csd-dot-${dotMap[k]}"></span>`;
+  }
+
+  function buildPanel(selectEl, wrap){
+    const showSearch = selectEl.options.length > 6;
+    const panel = document.createElement('div');
+    panel.className = 'csd-panel';
+    panel.innerHTML = `
+      <div class="csd-search-wrap${showSearch?' visible':''}">
+        <span class="csd-search-icon">🔍</span>
+        <input class="csd-search" placeholder="Search…" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="csd-list"></div>
+    `;
+    document.body.appendChild(panel);
+
+    const searchInput = panel.querySelector('.csd-search');
+    const list = panel.querySelector('.csd-list');
+
+    function renderOptions(filter=''){
+      list.innerHTML='';
+      const opts = Array.from(selectEl.options);
+      const filtered = filter ? opts.filter(o=>o.text.toLowerCase().includes(filter.toLowerCase())) : opts;
+      if(!filtered.length){
+        list.innerHTML=`<div class="csd-no-results">No results found</div>`;return;
+      }
+      filtered.forEach(opt=>{
+        const div = document.createElement('div');
+        div.className = 'csd-option'+(opt.disabled?' disabled':'')+(opt.value===selectEl.value?' selected':'');
+        div.dataset.value = opt.value;
+        div.innerHTML = getDot(opt.text) + `<span>${opt.text}</span>`;
+        div.addEventListener('mousedown', e=>{
+          e.preventDefault();
+          if(opt.disabled) return;
+          selectEl.value = opt.value;
+          selectEl.dispatchEvent(new Event('change',{bubbles:true}));
+          updateTrigger(selectEl);
+          closePanel(panel, wrap.querySelector('.csd-trigger'));
+        });
+        list.appendChild(div);
+      });
+    }
+
+    searchInput && searchInput.addEventListener('input', ()=>renderOptions(searchInput.value));
+
+    instances.set(selectEl, {panel, renderOptions, searchInput, list});
+    return {panel, renderOptions, searchInput};
+  }
+
+  function positionPanel(panel, trigger){
+    const rect = trigger.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom - 8;
+    const spaceAbove = rect.top - 8;
+    const panelH = Math.min(260, 40 + panel.querySelector('.csd-list').children.length * 40 || 200);
+
+    // Always use fixed positioning relative to viewport (not page scroll)
+    panel.style.position = 'fixed';
+    panel.style.width = Math.max(rect.width, 160) + 'px';
+    panel.style.left = Math.min(rect.left, window.innerWidth - Math.max(rect.width,160) - 8) + 'px';
+
+    // Inside a modal (bottom-sheet on mobile) — prefer upward if not enough room below
+    const inModal = !!trigger.closest('.modal-overlay, .modal');
+    const useAbove = (spaceBelow < panelH && spaceAbove > spaceBelow) || (inModal && spaceBelow < 180);
+
+    if(useAbove){
+      panel.style.top = '';
+      panel.style.bottom = (window.innerHeight - rect.top + 4) + 'px';
+      panel.classList.add('drop-up');
+    } else {
+      panel.style.top = (rect.bottom + 4) + 'px';
+      panel.style.bottom = '';
+      panel.classList.remove('drop-up');
+    }
+  }
+
+  function openPanel(panel, trigger, renderOptions, searchInput){
+    if(activePanel && activePanel !== panel) closeAll();
+    renderOptions('');
+    if(searchInput) searchInput.value='';
+    positionPanel(panel, trigger);
+    panel.classList.add('open');
+    trigger.classList.add('open');
+    activePanel = panel;
+    if(searchInput) setTimeout(()=>searchInput.focus(),60);
+  }
+
+  function closePanel(panel, trigger){
+    panel.classList.remove('open');
+    trigger && trigger.classList.remove('open');
+    if(activePanel===panel) activePanel=null;
+  }
+
+  function closeAll(){
+    document.querySelectorAll('.csd-panel.open').forEach(p=>{
+      p.classList.remove('open');
+    });
+    document.querySelectorAll('.csd-trigger.open').forEach(t=>t.classList.remove('open'));
+    activePanel=null;
+  }
+
+  function updateTrigger(selectEl){
+    const wrap = selectEl.closest('.csd-wrap');
+    if(!wrap) return;
+    const trigger = wrap.querySelector('.csd-trigger');
+    const textEl = trigger.querySelector('.csd-trigger-text');
+    const selOpt = selectEl.options[selectEl.selectedIndex];
+    const label = selOpt ? selOpt.text : '';
+    const isPlaceholder = !selectEl.value || selectEl.value === '';
+    textEl.textContent = label || 'Select…';
+    trigger.classList.toggle('csd-placeholder', isPlaceholder);
+  }
+
+  function init(selectEl){
+    if(selectEl.dataset.csdInit) return;
+    selectEl.dataset.csdInit = '1';
+
+    // Wrap
+    const wrap = document.createElement('div');
+    wrap.className = 'csd-wrap';
+    selectEl.parentNode.insertBefore(wrap, selectEl);
+    wrap.appendChild(selectEl);
+
+    // Trigger button
+    const trigger = document.createElement('div');
+    trigger.className = 'csd-trigger csd-placeholder';
+    trigger.setAttribute('role','combobox');
+    trigger.setAttribute('tabindex','0');
+    trigger.innerHTML = `<span class="csd-trigger-text">Select…</span>
+      <span class="csd-arrow"><svg width="12" height="12" viewBox="0 0 12 12"><path fill="currentColor" d="M6 8L1 3h10z"/></svg></span>`;
+    wrap.insertBefore(trigger, selectEl);
+
+    updateTrigger(selectEl);
+
+    const {panel, renderOptions, searchInput} = buildPanel(selectEl, wrap);
+
+    trigger.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      if(panel.classList.contains('open')){
+        closePanel(panel, trigger);
+      } else {
+        openPanel(panel, trigger, renderOptions, searchInput);
+      }
+    });
+
+    trigger.addEventListener('keydown', (e)=>{
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); trigger.click(); }
+      if(e.key==='Escape') closePanel(panel, trigger);
+      if(e.key==='ArrowDown'&&!panel.classList.contains('open')) trigger.click();
+    });
+
+    // Keep in sync if JS changes selectEl.value
+    const obs = new MutationObserver(()=>updateTrigger(selectEl));
+    obs.observe(selectEl, {attributes:true, childList:true, subtree:true});
+
+    selectEl.addEventListener('change', ()=>updateTrigger(selectEl));
+  }
+
+  function initAll(root){
+    const target = root || document;
+    target.querySelectorAll('select:not([data-csd-init]):not([data-no-csd])').forEach(s=>{
+      // Skip hidden selects already handled
+      if(!s.offsetParent && !s.closest('.modal-overlay:not(.hidden)') && !s.closest('#login-screen') && !s.closest('.filter-bar') && !s.closest('.billing-filter') && !document.body.contains(s)) return;
+      init(s);
+    });
+  }
+
+  // Close on outside click
+  document.addEventListener('click', (e)=>{
+    if(!e.target.closest('.csd-trigger') && !e.target.closest('.csd-panel')) closeAll();
+  });
+
+  // Reposition on scroll/resize — including modal scroll
+  function handleScroll(){
+    if(!activePanel) return;
+    const openTrigger = document.querySelector('.csd-trigger.open');
+    if(openTrigger) positionPanel(activePanel, openTrigger);
+    else closeAll();
+  }
+  window.addEventListener('resize', handleScroll);
+  // Catch scroll on any ancestor (modal-body scroll)
+  document.addEventListener('scroll', handleScroll, true);
+
+  // MutationObserver to auto-init new selects (dynamically added by JS)
+  const globalObs = new MutationObserver(muts=>{
+    let needsInit = false;
+    muts.forEach(m=>{
+      m.addedNodes.forEach(n=>{
+        if(n.nodeType===1){
+          if(n.tagName==='SELECT') { init(n); needsInit=true; }
+          else if(n.querySelectorAll) {
+            n.querySelectorAll('select:not([data-csd-init])').forEach(s=>{init(s); needsInit=true;});
+          }
+        }
+      });
+      // Re-render options if options were added to an existing select
+      if(m.target.tagName==='SELECT' && instances.has(m.target)){
+        const inst = instances.get(m.target);
+        updateTrigger(m.target);
+        if(activePanel === inst.panel) inst.renderOptions(inst.searchInput?.value||'');
+      }
+    });
+  });
+  globalObs.observe(document.body, {childList:true, subtree:true, attributes:false});
+
+  // Patch innerHTML setter on select parents to re-init after dynamic population
+  const origInnerHTML = Object.getOwnPropertyDescriptor(Element.prototype,'innerHTML');
+  // We'll rely on MutationObserver instead — it handles dynamic options reliably
+
+  return { init, initAll, closeAll, updateTrigger, instances };
+})();
+
+// Auto-init all selects once DOM ready
+document.addEventListener('DOMContentLoaded', ()=> CSD.initAll());
+// Also init immediately if DOM already loaded (for modals opened later)
+if(document.readyState !== 'loading') CSD.initAll();
+
+// Patch populateExportMonths and populatePaymentStudents to refresh CSD
+const _origPopulateExportMonths = typeof populateExportMonths === 'function' ? populateExportMonths : null;
+// CSD MutationObserver handles dynamic select changes automatically.
+
+// Patch openModal to re-init selects inside the modal
+const _origOpenModal = typeof openModal === 'function' ? openModal : null;
+// MutationObserver handles this too since modal becomes visible.
+
+</script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyC0YKfkY4-chB8jF20tsdEIxaonWakgRgs",
+  authDomain: "mfe-billingsystem.firebaseapp.com",
+  projectId: "mfe-billingsystem",
+  storageBucket: "mfe-billingsystem.firebasestorage.app",
+  messagingSenderId: "1030063909867",
+  appId: "1:1030063909867:web:b848b82f702519db8387ae"
+};
+
+const app = initializeApp(firebaseConfig);
+const firestore = getFirestore(app);
+
+// ✅ MAKE GLOBAL — expose firestore instance and all Firebase functions to window
+window.firestore = firestore;
+window.fb = {
+  collection,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc
+};
+
+// ✅ Start the app once Firebase is ready
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    if (typeof init === 'function' && sessionStorage.getItem('mfe_auth') === '1') {
+      init();
+    }
+    if (typeof loadDB === 'function' && sessionStorage.getItem('mfe_auth') === '1') {
+      loadDB();
+    }
+  });
+} else {
+  if (typeof init === 'function' && sessionStorage.getItem('mfe_auth') === '1') {
+    init();
+  }
+  if (typeof loadDB === 'function' && sessionStorage.getItem('mfe_auth') === '1') {
+    loadDB();
+  }
+}
+</script>
+</body>
+</html>
